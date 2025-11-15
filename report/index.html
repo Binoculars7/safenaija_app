@@ -88,31 +88,54 @@
         <div class="container pt-5">
             <div class="row g-5 pt-5">
                 <div class="col-lg-6 align-self-center text-center text-lg-start mb-lg-5" style="margin-top: -1em;">
-                    <h1 id="typing-header" class="display-4 text-white mb-4 animated slideInRight" style="font-family: 'Courier New', Courier, monospace;"></h1>
-                    <script>
-                        function startTypingHeader() {
-                            const txt = "Verify your NIN to continue";
-                            let i = 0;
-                            function typeEffect() {
-                                document.getElementById("typing-header").innerHTML = txt.slice(0, i) + '<span style="border-right: .08em solid #fff"></span>';
-                                i++;
-                                if (i > txt.length) {
-                                    i = 0;
-                                    setTimeout(typeEffect, 4000); // Pause a bit before restarting
-                                } else {
-                                    setTimeout(typeEffect, 70);
-                                }
-                            }
-                            typeEffect();
-                        }
-                        document.addEventListener("DOMContentLoaded", startTypingHeader);
-                    </script>
+                    <h1 id="typing-header" class="display-4 text-white mb-4 animated slideInRight" style="font-family: 'Courier New', Courier, monospace;">Report a Case</h1>
+                    
+                    
                     <div class="input-center-wrapper">
                         <div class="mb-4 animated slideInRight input-center-inner">
-                            <input 
-                                type="text" 
+                            <textarea name="urgent_case" class="form-control" 
+                            placeholder="What happened ?" 
+                            style="
+                                width: 100%; 
+                                border-radius: 25px; 
+                                padding: 1.2em 1.2em; 
+                                min-height: 110px;
+                                border: none;
+                                background: rgba(247, 249, 252, 0.3);
+                                box-shadow: 0 2px 8px rgba(20, 24, 62, 0.05);
+                                font-size: 1rem;
+                                transition: background 0.2s;
+                                color: #fff;
+                                backdrop-filter: blur(2px);
+                            "
+                            "
+                            onfocus="this.style.background='rgba(247, 249, 252, 0.45)'"
+                            onblur="this.style.background='rgba(247, 249, 252, 0.3)'"></textarea>
+                            <style>
+                                .input-center-inner textarea::placeholder {
+                                    color: #ffffff !important;
+                                    opacity: 1 !important;
+                                }
+                                .input-center-inner textarea {
+                                    color: #fff !important;
+                                }
+                            </style>
+                        </div>
+                        <h1 id="typing-header" class="display-4 text-white mb-4 animated slideInRight" style="font-family: 'Courier New', Courier, monospace; font-size: 15px;">
+                            <a href="#" id="autodetectLink" class="autodetect-link" style="color: pink; text-decoration:none;">Click to autodetect location</a>
+                        </h1>
+                        <style>
+                             #typing-header{
+                                margin-top: -1.2em;
+                            }
+                            .autodetect-link:hover {
+                                color: #fff !important;
+                            }
+                        </style>
+                        <div class="mb-4 animated slideInRight input-center-inner">
+                            <select 
+                                id="stateSelect"
                                 class="form-control" 
-                                placeholder="Enter Your NIN" 
                                 style="
                                     width: 100%; 
                                     border-radius: 25px; 
@@ -124,11 +147,93 @@
                                     transition: background 0.2s;
                                     color: #fff;
                                     backdrop-filter: blur(2px);
+                                    margin-top:-1.2em;
                                 "
                                 onfocus="this.style.background='rgba(247, 249, 252, 0.45)'"
                                 onblur="this.style.background='rgba(247, 249, 252, 0.3)'"
                             >
+                                <option value="" style="color: black;">Select your State</option>
+                                <option value="abia" style="color: black;">Abia</option>
+                                <option value="adamawa" style="color: black;">Adamawa</option>
+                                <option value="akwa_ibom" style="color: black;">Akwa Ibom</option>
+                                <option value="anambra" style="color: black;">Anambra</option>
+                                <option value="bauchi" style="color: black;">Bauchi</option>
+                                <option value="bayelsa" style="color: black;">Bayelsa</option>
+                                <option value="benue" style="color: black;">Benue</option>
+                                <option value="borno" style="color: black;">Borno</option>
+                                <option value="cross_river" style="color: black;">Cross River</option>
+                                <option value="delta" style="color: black;">Delta</option>
+                                <option value="ebonyi" style="color: black;">Ebonyi</option>
+                                <option value="edo" style="color: black;">Edo</option>
+                                <option value="ekiti" style="color: black;">Ekiti</option>
+                                <option value="enugu" style="color: black;">Enugu</option>
+                                <option value="gombe" style="color: black;">Gombe</option>
+                                <option value="imo" style="color: black;">Imo</option>
+                                <option value="jigawa" style="color: black;">Jigawa</option>
+                                <option value="kaduna" style="color: black;">Kaduna</option>
+                                <option value="kano" style="color: black;">Kano</option>
+                                <option value="katsina" style="color: black;">Katsina</option>
+                                <option value="kebbi" style="color: black;">Kebbi</option>
+                                <option value="kogi" style="color: black;">Kogi</option>
+                                <option value="kwara" style="color: black;">Kwara</option>
+                                <option value="lagos" style="color: black;">Lagos</option>
+                                <option value="nasarawa" style="color: black;">Nasarawa</option>
+                                <option value="niger" style="color: black;">Niger</option>
+                                <option value="ogun" style="color: black;">Ogun</option>
+                                <option value="ondo" style="color: black;">Ondo</option>
+                                <option value="osun" style="color: black;">Osun</option>
+                                <option value="oyo" style="color: black;">Oyo</option>
+                                <option value="plateau" style="color: black;">Plateau</option>
+                                <option value="rivers" style="color: black;">Rivers</option>
+                                <option value="sokoto" style="color: black;">Sokoto</option>
+                                <option value="taraba" style="color: black;">Taraba</option>
+                                <option value="yobe" style="color: black;">Yobe</option>
+                                <option value="zamfara" style="color: black;">Zamfara</option>
+                                <option value="fct" style="color: black;">FCT</option>
+                            </select>
                             <style>
+                                .input-center-inner select option {
+                                    color: black !important;
+                                }
+                                .input-center-inner input::placeholder {
+                                    color: #ffffffcc !important;
+                                    opacity: 1 !important;
+                                }
+                                .input-center-inner input {
+                                    color: #fff !important;
+                                }
+                                .verify-btn {
+                                    color: black !important;
+                                }
+                            </style>
+                        </div>
+                        <div class="mb-4 animated slideInRight input-center-inner">
+                            <select 
+                                id="lgaSelect"
+                                class="form-control" 
+                                style="
+                                    width: 100%; 
+                                    border-radius: 25px; 
+                                    padding: 0.75em 1.2em; 
+                                    border: none;
+                                    background: rgba(247, 249, 252, 0.3);
+                                    box-shadow: 0 2px 8px rgba(20, 24, 62, 0.05);
+                                    font-size: 1rem;
+                                    transition: background 0.2s;
+                                    color: #fff;
+                                    backdrop-filter: blur(2px);
+                                    margin-top: -1.5em;
+                                "
+                                onfocus="this.style.background='rgba(247, 249, 252, 0.45)'"
+                                onblur="this.style.background='rgba(247, 249, 252, 0.3)'"
+                            >
+                                <option value="" style="color: black;">Select your LGA</option>
+                               
+                            </select>
+                            <style>
+                                .input-center-inner select option {
+                                    color: black !important;
+                                }
                                 .input-center-inner input::placeholder {
                                     color: #ffffffcc !important;
                                     opacity: 1 !important;
@@ -143,9 +248,10 @@
                         </div>
                         <div class="mb-4 animated slideInRight input-center-inner">
                             <input 
+                                id="addressInput"
                                 type="text" 
                                 class="form-control" 
-                                placeholder="Enter your phone number" 
+                                placeholder="What is your address?" 
                                 style="
                                     width: 100%; 
                                     border-radius: 25px; 
@@ -156,6 +262,30 @@
                                     font-size: 1rem;
                                     transition: background 0.2s;
                                     margin-top: -1.5em;
+                                    margin-bottom: -0.5em;
+                                    color: #fff;
+                                    backdrop-filter: blur(2px);
+                                "
+                                onfocus="this.style.background='rgba(247, 249, 252, 0.45)'"
+                                onblur="this.style.background='rgba(247, 249, 252, 0.3)'"
+                            >
+                        </div>
+                        <div class="mb-4 animated slideInRight input-center-inner">
+                            <input 
+                                id="gpsInput"
+                                type="text" 
+                                class="form-control" 
+                                placeholder="GPS coordinates" 
+                                style="
+                                    width: 100%; 
+                                    border-radius: 25px; 
+                                    padding: 0.75em 1.2em;
+                                    border: none;
+                                    background: rgba(247, 249, 252, 0.3);
+                                    box-shadow: 0 2px 8px rgba(20, 24, 62, 0.05);
+                                    font-size: 1rem;
+                                    transition: background 0.2s;
+                                    margin-top: -3.5em;
                                     margin-bottom: -0.5em;
                                     color: #fff;
                                     backdrop-filter: blur(2px);
@@ -213,7 +343,7 @@
                             <input 
                                 type="button" 
                                 class="form-control verify-btn"
-                                value="Verify"
+                                value="Report"
                                 style="color: black !important;"
                             >
                         </div>
