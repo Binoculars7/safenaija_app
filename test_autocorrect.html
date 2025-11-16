@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autocorrect Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 5px;
+            background: white;
+            border-left: 4px solid #4CAF50;
+        }
+        .test-result.fail {
+            border-left-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>Autocorrect Function Test</h1>
+    
+    <h2>Try typing in the textarea:</h2>
+    <textarea id="testArea" placeholder="Type something with misspellings like: accidnt, kidnapin, suicde, etc."></textarea>
+    
+    <div class="output">
+        <h3>Output:</h3>
+        <div id="output">Type above to see corrections...</div>
+    </div>
+    
+    <div class="output">
+        <h3>Test Results:</h3>
+        <div id="tests"></div>
+    </div>
+
+    <script>
+        // Autocorrection function (copy from main.js)
+        function autocorrectText(text) {
+            if (!text || text.trim().length === 0) {
+                return text;
+            }
+            
+            var correctedText = text;
+            
+            // Comprehensive dictionary of common misspellings and corrections
+            var corrections = [
+                // Protest related
+                { wrong: /\bprotestin\b/gi, correct: 'protesting' },
+                { wrong: /\bprotestor\b/gi, correct: 'protesters' },
+                { wrong: /\bprotestrs\b/gi, correct: 'protesters' },
+                { wrong: /\bdemonstratin\b/gi, correct: 'demonstrating' },
+                { wrong: /\broad\s+blok\b/gi, correct: 'road block' },
+                { wrong: /\broad\s+bloc\b/gi, correct: 'road block' },
+                
+                // Suicide related
+                { wrong: /\bsuicid\b/gi, correct: 'suicide' },
+                { wrong: /\bsuicde\b/gi, correct: 'suicide' },
+                { wrong: /\bcommited\b/gi, correct: 'committed' },
+                
+                // Accident related
+                { wrong: /\baccidnt\b/gi, correct: 'accident' },
+                { wrong: /\baccidnet\b/gi, correct: 'accident' },
+                { wrong: /\bacident\b/gi, correct: 'accident' },
+                { wrong: /\bcollison\b/gi, correct: 'collision' },
+                { wrong: /\bcollision\b/gi, correct: 'collision' },
+                
+                // Medical related
+                { wrong: /\bunconsious\b/gi, correct: 'unconscious' },
+                { wrong: /\bunconcious\b/gi, correct: 'unconscious' },
+                { wrong: /\bbleeding\b/gi, correct: 'bleeding' },
+                { wrong: /\bseizure\b/gi, correct: 'seizure' },
+                
+                // Kidnapping related
+                { wrong: /\bkidnapin\b/gi, correct: 'kidnapping' },
+                { wrong: /\bkidnaping\b/gi, correct: 'kidnapping' },
+                { wrong: /\bkidnapped\b/gi, correct: 'kidnapped' },
+                
+                // Missing person related
+                { wrong: /\bdisapeared\b/gi, correct: 'disappeared' },
+                { wrong: /\bdisappeared\b/gi, correct: 'disappeared' },
+                
+                // Common misspellings
+                { wrong: /\bthier\b/gi, correct: 'their' },
+                { wrong: /\brecieve\b/gi, correct: 'receive' },
+                { wrong: /\boccured\b/gi, correct: 'occurred' },
+                { wrong: /\boccuring\b/gi, correct: 'occurring' },
+                { wrong: /\boccassion\b/gi, correct: 'occasion' },
+                { wrong: /\boccassional\b/gi, correct: 'occasional' },
+                { wrong: /\barent\b/gi, correct: 'aren\'t' },
+                { wrong: /\bdont\b/gi, correct: 'don\'t' },
+                { wrong: /\bwont\b/gi, correct: 'won\'t' },
+                { wrong: /\bcant\b/gi, correct: 'can\'t' },
+                { wrong: /\bisnt\b/gi, correct: 'isn\'t' },
+                { wrong: /\bhasnt\b/gi, correct: 'hasn\'t' },
+                { wrong: /\bhavent\b/gi, correct: 'haven\'t' },
+                { wrong: /\bwoudl\b/gi, correct: 'would' },
+                { wrong: /\bshoudl\b/gi, correct: 'should' },
+                { wrong: /\bcoudl\b/gi, correct: 'could' },
+                { wrong: /\boccuring\b/gi, correct: 'occurring' },
+                { wrong: /\bseperate\b/gi, correct: 'separate' },
+                { wrong: /\bdefinately\b/gi, correct: 'definitely' },
+                { wrong: /\bdefinite\b/gi, correct: 'definite' },
+                { wrong: /\bdisapear\b/gi, correct: 'disappear' },
+                { wrong: /\bneccessary\b/gi, correct: 'necessary' },
+                { wrong: /\bneccessarily\b/gi, correct: 'necessarily' },
+                { wrong: /\balot\b/gi, correct: 'a lot' },
+                { wrong: /\bwierd\b/gi, correct: 'weird' },
+                { wrong: /\bgoverment\b/gi, correct: 'government' },
+                { wrong: /\benvirment\b/gi, correct: 'environment' },
+                { wrong: /\bcivillian\b/gi, correct: 'civilian' },
+                { wrong: /\bcivilan\b/gi, correct: 'civilian' },
+                { wrong: /\bsuspicious\b/gi, correct: 'suspicious' },
+                { wrong: /\bsuspision\b/gi, correct: 'suspicion' },
+                { wrong: /\bterorist\b/gi, correct: 'terrorist' },
+                { wrong: /\bterroism\b/gi, correct: 'terrorism' },
+                { wrong: /\brob\b/gi, correct: 'rob' },
+                { wrong: /\brobery\b/gi, correct: 'robbery' },
+                { wrong: /\bvandal\b/gi, correct: 'vandal' },
+                { wrong: /\bvandelism\b/gi, correct: 'vandalism' },
+                { wrong: /\bassault\b/gi, correct: 'assault' },
+                { wrong: /\bashamed\b/gi, correct: 'ashamed' },
+                { wrong: /\bemphasize\b/gi, correct: 'emphasize' },
+                { wrong: /\bemphasise\b/gi, correct: 'emphasise' },
+                { wrong: /\bemergecy\b/gi, correct: 'emergency' },
+                { wrong: /\bemergancy\b/gi, correct: 'emergency' },
+                { wrong: /\bimmediately\b/gi, correct: 'immediately' },
+                { wrong: /\bimmidiate\b/gi, correct: 'immediate' },
+                { wrong: /\bimmidiatly\b/gi, correct: 'immediately' }
+            ];
+            
+            // Apply all corrections
+            for (var i = 0; i < corrections.length; i++) {
+                correctedText = correctedText.replace(corrections[i].wrong, corrections[i].correct);
+            }
+            
+            return correctedText;
+        }
+        
+        // Test the function
+        document.getElementById('testArea').addEventListener('input', function() {
+            var input = this.value;
+            var corrected = autocorrectText(input);
+            document.getElementById('output').innerHTML = '<strong>Corrected:</strong> ' + corrected;
+            console.log('Input:', input);
+            console.log('Corrected:', corrected);
+        });
+        
+        // Run unit tests
+        window.addEventListener('load', function() {
+            var tests = [
+                { input: 'accidnt', expected: 'accident' },
+                { input: 'I had an accidnt today', expected: 'I had an accident today' },
+                { input: 'kidnapin', expected: 'kidnapping' },
+                { input: 'suicde', expected: 'suicide' },
+                { input: 'thier car', expected: 'their car' },
+                { input: 'dont know', expected: 'don\'t know' },
+                { input: 'a kidnapin incident with accidnt', expected: 'a kidnapping incident with accident' }
+            ];
+            
+            var testDiv = document.getElementById('tests');
+            tests.forEach(function(test, index) {
+                var result = autocorrectText(test.input);
+                var passed = result === test.expected;
+                
+                var html = '<div class="test-result ' + (passed ? '' : 'fail') + '">';
+                html += '<strong>' + (passed ? '✓ PASS' : '✗ FAIL') + '</strong><br>';
+                html += 'Input: <code>' + test.input + '</code><br>';
+                html += 'Expected: <code>' + test.expected + '</code><br>';
+                html += 'Got: <code>' + result + '</code>';
+                html += '</div>';
+                
+                testDiv.innerHTML += html;
+            });
+        });
+    </script>
+</body>
+</html>

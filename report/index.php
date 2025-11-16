@@ -92,8 +92,11 @@
                     
                     
                     <div class="input-center-wrapper">
+                        <div id="issueCategoryTag" class="tag" style="display: none; background: #fff3cd; color: #d9534f; border-radius: 15px; padding: 0.1em 1em; font-weight: 500; font-size: 12px ; margin-bottom: 0.7em; box-shadow: 0 2px 6px rgba(249, 193, 22, 0.1); border: 1px solid #ffe1a3;">
+                            
+                        </div>
                         <div class="mb-4 animated slideInRight input-center-inner">
-                            <textarea name="urgent_case" class="form-control" 
+                            <textarea id="urgentCaseTextarea" name="urgent_case" class="form-control" 
                             placeholder="What happened ?" 
                             style="
                                 width: 100%; 
@@ -285,7 +288,7 @@
                                     box-shadow: 0 2px 8px rgba(20, 24, 62, 0.05);
                                     font-size: 1rem;
                                     transition: background 0.2s;
-                                    margin-top: -3.5em;
+                                    margin-top: -1em;
                                     margin-bottom: -0.5em;
                                     color: #fff;
                                     backdrop-filter: blur(2px);
@@ -445,6 +448,9 @@
     <script src="lib/waypoints/waypoints.min.js"></script>
     <script src="lib/counterup/counterup.min.js"></script>
     <script src="lib/owlcarousel/owl.carousel.min.js"></script>
+
+    <!-- Spell Checker Library for autocorrection -->
+    <script src="https://cdn.jsdelivr.net/npm/typo-js@1.1.20/typo.min.js"></script>
 
     <!-- Template Javascript -->
     <script src="js/main.js"></script>
