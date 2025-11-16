@@ -63,7 +63,11 @@
     
     // OpenAI API Key - Add your OpenAI API key here
     // Get your API key from: https://platform.openai.com/api-keys
-    var OPENAI_API_KEY = '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'; // Add your OpenAI API key here
+    // NOTE: API calls may fail if your OpenAI plan quota is exceeded. To force the local heuristics
+    // to be used (no API calls), set OPENAI_API_KEY = '' below.
+    var OPENAI_API_KEY = ''; // Disabled by default to avoid quota errors. Insert your key if you want AI assistance.
+    // Debug flag: set to true to emit verbose categorization logs to console
+    var CATEGORY_DEBUG = true;
     
     // Issue categories list
     var issueCategories = {
@@ -126,6 +130,76 @@
             displayName: 'Shooting',
             color: '#d9534f',
             bgColor: '#f8d7da'
+        },
+        'homicide': {
+            displayName: 'Homicide',
+            color: '#d9534f',
+            bgColor: '#f8d7da'
+        },
+        'suicide': {
+            displayName: 'Suicide',
+            color: '#5c5c7c',
+            bgColor: '#e6e6fa'
+        },
+        'terrorism': {
+            displayName: 'Terrorism/Insurgency',
+            color: '#721c24',
+            bgColor: '#f8d7da'
+        },
+        'banditry': {
+            displayName: 'Banditry',
+            color: '#d9534f',
+            bgColor: '#f8d7da'
+        },
+        'communal_conflict': {
+            displayName: 'Communal/Ethnic Conflict',
+            color: '#ff6b6b',
+            bgColor: '#ffe0e0'
+        },
+        'political_violence': {
+            displayName: 'Political Violence',
+            color: '#d32f2f',
+            bgColor: '#ffcdd2'
+        },
+        'police_brutality': {
+            displayName: 'Police Brutality',
+            color: '#6c3483',
+            bgColor: '#ebdef0'
+        },
+        'cybercrime': {
+            displayName: 'Cybercrime',
+            color: '#0c5460',
+            bgColor: '#d1ecf1'
+        },
+        'fraud': {
+            displayName: 'Fraud',
+            color: '#ff9800',
+            bgColor: '#fff3e0'
+        },
+        'ritualism': {
+            displayName: 'Ritualism',
+            color: '#663399',
+            bgColor: '#f0e6ff'
+        },
+        'human_trafficking': {
+            displayName: 'Human Trafficking',
+            color: '#8b008b',
+            bgColor: '#ffe6f0'
+        },
+        'environmental_disaster': {
+            displayName: 'Environmental Disaster',
+            color: '#228b22',
+            bgColor: '#d4edda'
+        },
+        'protest': {
+            displayName: 'Protest/Demonstration',
+            color: '#0275d8',
+            bgColor: '#d1ecf1'
+        },
+        'traffic_congestion': {
+            displayName: 'Traffic Congestion',
+            color: '#f0ad4e',
+            bgColor: '#fff3cd'
         },
         'other': {
             displayName: 'Other',
@@ -325,98 +399,50 @@
             return;
         }
         
+        // ALWAYS collect local categories first (guaranteed multi-category detection)
+        var localKeywordCategories = categorizeByKeywords(text);
+        var localDerivedCategories = deriveCategoryFromText(text);
+        
+        // Merge both local sources into a single array
+        var allLocalCategories = [];
+        if (localKeywordCategories) {
+            allLocalCategories = String(localKeywordCategories).split(/,|;/).map(function(c){ return c.trim().toLowerCase(); }).filter(Boolean);
+        }
+        if (localDerivedCategories) {
+            String(localDerivedCategories).split(/,|;/).map(function(c){ return c.trim().toLowerCase(); }).filter(Boolean).forEach(function(c){
+                if (allLocalCategories.indexOf(c) === -1) {
+                    allLocalCategories.push(c);
+                }
+            });
+        }
+        
+        // If we have local categories and no API key, use them
         if (!OPENAI_API_KEY || OPENAI_API_KEY === '') {
-            // Fallback to keyword-based categorization if no API key
-            var category = categorizeByKeywords(text);
-            if (category) {
-                callback(category, null, 'keyword-match');
+            if (allLocalCategories.length > 0) {
+                var finalLocal = allLocalCategories.join(', ');
+                callback(null, finalLocal, 'local-all');
             } else {
-                // If no keyword match, analyze text more deeply to suggest appropriate category
-                var lowerText = text.toLowerCase();
-                var suggestedCategory = null;
-                
-                // Suicide detection
-                if (lowerText.indexOf('suicide') !== -1 || lowerText.indexOf('killed himself') !== -1 || lowerText.indexOf('killed herself') !== -1 || 
-                    lowerText.indexOf('took his life') !== -1 || lowerText.indexOf('took her life') !== -1 || 
-                    lowerText.indexOf('committed suicide') !== -1 || lowerText.indexOf('hanging') !== -1 || 
-                    lowerText.indexOf('hanged') !== -1) {
-                    suggestedCategory = 'suicide';
-                }
-                // Protest/Demonstration detection - check before traffic
-                else if (lowerText.indexOf('protest') !== -1 || lowerText.indexOf('protesting') !== -1 || 
-                    lowerText.indexOf('demonstration') !== -1 || lowerText.indexOf('demonstrating') !== -1 ||
-                    lowerText.indexOf('rally') !== -1 || lowerText.indexOf('march') !== -1 ||
-                    ((lowerText.indexOf('roadblock') !== -1 || lowerText.indexOf('road block') !== -1) && 
-                     (lowerText.indexOf('people') !== -1 || lowerText.indexOf('protest') !== -1))) {
-                    suggestedCategory = 'protest';
-                }
-                // Traffic congestion
-                else if (lowerText.indexOf('traffic') !== -1 && (lowerText.indexOf('slow') !== -1 || lowerText.indexOf('congestion') !== -1 || lowerText.indexOf('heavy') !== -1 || lowerText.indexOf('jam') !== -1)) {
-                    suggestedCategory = 'traffic_congestion';
-                }
-                // Medical emergency
-                else if (lowerText.indexOf('medical') !== -1 || lowerText.indexOf('hospital') !== -1 || lowerText.indexOf('ambulance') !== -1 ||
-                         lowerText.indexOf('heart attack') !== -1 || lowerText.indexOf('stroke') !== -1 || lowerText.indexOf('unconscious') !== -1 ||
-                         lowerText.indexOf('bleeding') !== -1 || lowerText.indexOf('seizure') !== -1) {
-                    suggestedCategory = 'medical_emergency';
-                }
-                // Natural disaster
-                else if (lowerText.indexOf('flood') !== -1 || lowerText.indexOf('storm') !== -1 || lowerText.indexOf('earthquake') !== -1 ||
-                         lowerText.indexOf('landslide') !== -1 || lowerText.indexOf('wildfire') !== -1) {
-                    suggestedCategory = 'natural_disaster';
-                }
-                // Building collapse
-                else if (lowerText.indexOf('building') !== -1 && (lowerText.indexOf('collapse') !== -1 || lowerText.indexOf('fell') !== -1 || lowerText.indexOf('collapsed') !== -1)) {
-                    suggestedCategory = 'building_collapse';
-                }
-                // Missing person
-                else if (lowerText.indexOf('missing') !== -1 || lowerText.indexOf('disappeared') !== -1 || lowerText.indexOf('lost') !== -1) {
-                    suggestedCategory = 'missing_person';
-                }
-                // Drug related
-                else if (lowerText.indexOf('drug') !== -1 || lowerText.indexOf('overdose') !== -1) {
-                    suggestedCategory = 'drug_related';
-                }
-                // Threat or danger
-                else if (lowerText.indexOf('danger') !== -1 || lowerText.indexOf('threat') !== -1 || lowerText.indexOf('threatening') !== -1) {
-                    suggestedCategory = 'threat';
-                }
-                // Suspicious activity
-                else if (lowerText.indexOf('suspicious') !== -1 || lowerText.indexOf('suspected') !== -1) {
-                    suggestedCategory = 'suspicious_activity';
-                }
-                // Urgent help
-                else if (lowerText.indexOf('help') !== -1 || lowerText.indexOf('urgent') !== -1) {
-                    suggestedCategory = 'urgent_help';
-                }
-                
-                // If we found a specific category, use it; otherwise analyze text to create one
-                    if (suggestedCategory) {
-                        callback(suggestedCategory, suggestedCategory, 'heuristic-match');
-                    } else {
-                        // Analyze text to derive a meaningful category
-                        var derivedCategory = deriveCategoryFromText(text);
-                        callback(derivedCategory, derivedCategory, 'derived-heuristic');
-                    }
+                callback(null, 'other', 'other');
             }
             return;
         }
         
         var categoryList = Object.keys(issueCategories).join(', ');
-        
-    var prompt = 'You are an expert emergency report analyzer. Your task is to read the following text and determine the SINGLE BEST category that most accurately describes what happened. ' +
+
+    var prompt = 'You are an expert emergency report analyzer. Your task is to read the following text and IDENTIFY ALL incident categories that are present. ' +
                     '\n\nANALYSIS PROCESS:' +
                     '\n1. Read the ENTIRE text carefully and understand the FULL CONTEXT.' +
-                    '\n2. Identify the PRIMARY incident or event being reported.' +
-                    '\n3. Determine what TYPE of emergency or incident this is.' +
-                    '\n4. Choose the MOST SPECIFIC and ACCURATE category name.' +
+                    '\n2. Identify ALL incidents or events being reported (not just the primary one).' +
+                    '\n3. Determine what TYPE(s) of emergency or incident these are.' +
+                    '\n4. Choose ALL SPECIFIC and ACCURATE category names that apply (use existing preferred categories when possible).' +
                     '\n\nIMPORTANT RULES:' +
+                    '\n- If multiple incidents are described, return all applicable categories.' +
+                    '\n- Examples: "shooting + robbery" = return ["shooting", "robbery"]; "stabbing + kidnapping" = ["armed_attack", "kidnapping"]' +
                     '\n- Protests, demonstrations, rallies, roadblocks with people protesting = "protest" (NOT road_incident or traffic_congestion)' +
                     '\n- Traffic congestion, slow traffic, or heavy traffic = "traffic_congestion" (NOT road_accident)' +
                     '\n- Road accident requires actual collision, crash, injury, or vehicle damage' +
-                    '\n- Roadblock with protesting people = "protest" (NOT road_incident)' +
                     '\n- Suicide or self-inflicted death = "suicide"' +
-                    '\n- Murder or homicide = "homicide" or "murder"' +
+                    '\n- Murder, homicide or mentions of people dead = "homicide"' +
                     '\n- Medical issues (heart attack, stroke, unconscious, bleeding) = "medical_emergency"' +
                     '\n- Natural disasters (flood, storm, earthquake) = "natural_disaster"' +
                     '\n- Building/structure collapse = "building_collapse"' +
@@ -424,26 +450,30 @@
                     '\n- Theft, robbery, burglary = "robbery"' +
                     '\n- Fire = "fire_accident"' +
                     '\n- Assault or physical attack = "assault"' +
+                    '\n- Shooting or gunfire = "shooting"' +
+                    '\n- Armed attack, stabbing, knife attack = "armed_attack"' +
                     '\n- Kidnapping = "kidnapping"' +
                     '\n- Vandalism = "vandalism"' +
                     '\n- Cultism or gang violence = "cultism"' +
                     '\n- Domestic violence = "domestic_violence"' +
+                    '\n- Sexual assault, rape = "sexual_assault"' +
+                    '\n- Child sexual abuse = "child_sexual_abuse"' +
                     '\n\nPREFERRED CATEGORIES (use if text matches): ' + categoryList +
                     '\n\nIf the text does NOT match any preferred category, create a NEW SPECIFIC category in snake_case format.' +
                     '\nExamples of good new categories: cyber_crime, power_outage, gas_leak, water_shortage, noise_pollution, animal_attack, etc.' +
                     '\n\nNEVER use generic categories like "emergency_report", "incident_report", or "reported_incident".' +
-                    '\nALWAYS choose the MOST SPECIFIC category that best describes what happened.' +
+                    '\nALWAYS choose the MOST SPECIFIC categories that best describe what happened.' +
                     '\nThink carefully about what the text is REALLY describing, not just individual words.' +
                     '\n\nText to analyze: "' + text + '"' +
-                    '\n\nRespond with ONLY the category name in snake_case format, nothing else.';
-        
+                    '\n\nRespond with ONLY the categories in snake_case format (comma-separated if multiple), nothing else.';
+
         // Use CORS proxy if needed (OpenAI API may have CORS restrictions)
         var apiUrl = 'https://api.openai.com/v1/chat/completions';
         // Alternative: Use a CORS proxy if direct calls fail
         // var apiUrl = 'https://corsproxy.io/?https://api.openai.com/v1/chat/completions';
         
-        // Prefer machine-parseable JSON output from the model to reduce misinterpretation
-        var jsonPrompt = prompt + "\n\nIMPORTANT: Respond with a single valid JSON object ONLY (no additional text). The JSON must have these keys: \n{\n  \"category\": string,        // single best category in snake_case\n  \"confidence\": number,     // model confidence 0.0-1.0\n  \"reason\": string          // short plain-language explanation of why this category\n}\n\nRespond ONLY with the JSON object and nothing else.\n";
+    // Prefer machine-parseable JSON output from the model to reduce misinterpretation
+    var jsonPrompt = prompt + "\n\nIMPORTANT: Respond with a single valid JSON object ONLY (no additional text). The JSON must have these keys: \n{\n  \"categories\": string,     // comma-separated list of categories in snake_case (e.g., 'shooting, homicide')\n  \"confidence\": number,     // model confidence 0.0-1.0\n  \"reason\": string          // short plain-language explanation of the incidents\n}\n\nRespond ONLY with the JSON object and nothing else.\n";
 
         $.ajax({
             url: apiUrl,
@@ -452,19 +482,19 @@
                 'Content-Type': 'application/json',
                 'Authorization': 'Bearer ' + OPENAI_API_KEY
             },
-            data: JSON.stringify({
+                data: JSON.stringify({
                 model: 'gpt-3.5-turbo',
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are an expert emergency report categorizer with deep understanding of incident types. Your goal is to identify the SINGLE BEST category that most accurately describes the reported incident. Read the ENTIRE text, understand the FULL CONTEXT, identify the PRIMARY incident, and choose the MOST SPECIFIC category. NEVER use generic categories. ALWAYS be specific and accurate. Consider the context, not just keywords. Examples: protest (for protests, demonstrations, roadblocks with people protesting), suicide (for self-inflicted death), homicide (for murder), medical_emergency (for health issues), traffic_congestion (for slow traffic, NOT accidents), road_accident (only for actual crashes/collisions), robbery (for theft), fire_accident (for fires), assault (for physical attacks), etc. Be intelligent, context-aware, and precise.\nIMPORTANT: return a single valid JSON object with keys category, confidence (0.0-1.0), and reason. Do not include any other text.'
+                        content: 'You are an expert Nigerian emergency report categorizer with deep understanding of incident types in Nigeria. Your goal is to identify ALL incident categories that are present in the reported text. If multiple incidents are described, return all applicable categories. Read the ENTIRE text, understand the FULL CONTEXT, identify ALL incidents, and choose ALL MOST SPECIFIC categories. Valid categories include: robbery, road_accident, fire_accident, cultism, assault, kidnapping, vandalism, domestic_violence, sexual_assault, child_sexual_abuse, armed_attack, shooting, homicide, suicide, terrorism, banditry, communal_conflict, political_violence, police_brutality, cybercrime, ritualism, human_trafficking, protest, traffic_congestion, medical_emergency, natural_disaster, building_collapse, drug_related, missing_person, bomb_threat, fight, public_disturbance, threat, suspicious_activity. Examples: "shooting in market and people died" = ["shooting", "homicide"]; "herdsmen killed farmers" = ["homicide", "armed_attack", "banditry"]; "boko haram bombing" = ["terrorism", "bomb_threat"]. NEVER use generic categories. ALWAYS be specific and accurate. Consider the Nigerian context.\nIMPORTANT: return a single valid JSON object with keys categories (comma-separated string), confidence (0.0-1.0), and reason. Do not include any other text.'
                     },
                     {
                         role: 'user',
                         content: jsonPrompt
                     }
                 ],
-                max_tokens: 50,
+                max_tokens: 100,
                 temperature: 0.2
             }),
             timeout: 10000,
@@ -486,55 +516,131 @@
                         console.warn('OpenAI returned non-JSON or malformed JSON:', raw);
                     }
 
-                    var category = null;
+                    if (CATEGORY_DEBUG) {
+                        console.log('--- Categorizer Debug START ---');
+                        console.log('AI raw response:', raw);
+                        console.log('AI parsed JSON:', parsed);
+                    }
+
+                    var categoriesArray = [];
                     var confidence = 0.0;
                     var reason = '';
-                    if (parsed && parsed.category) {
-                        category = String(parsed.category).toLowerCase().trim();
+
+                    // Parse categories field (supports array or comma-separated string)
+                    if (parsed) {
                         confidence = parseFloat(parsed.confidence) || 0.0;
                         reason = String(parsed.reason || '');
+                        if (parsed.categories) {
+                            if (Array.isArray(parsed.categories)) {
+                                categoriesArray = parsed.categories.map(function(c){ return String(c).toLowerCase().trim(); });
+                            } else {
+                                // Could be a comma-separated string
+                                categoriesArray = String(parsed.categories).split(/,|\[|\]|\||;/).map(function(c){ return String(c).toLowerCase().replace(/[^a-z0-9_\s-]/g,'').trim(); }).filter(Boolean);
+                            }
+                        }
                     }
 
                     // Post-processing safety checks: if the model output is missing or low-confidence, fallback to local heuristics
                     var lowerText = text.toLowerCase();
-                    var highRiskKeywords = /\b(kill|murder|suicide|rape|rape(d)?|molest|molested|defile|defiled|child|boy|girl|baby|stab|shoot|gun|weapon)\b/i;
-                    if (!category || category.length === 0 || confidence < 0.4) {
+                    var highRiskKeywords = /\b(kill|murder|suicide|rape|raped|molest|molested|defile|defiled|child|boy|girl|baby|stab|shoot|gun|weapon)\b/i;
+                    if (!categoriesArray || categoriesArray.length === 0 || confidence < 0.4) {
                         // If high-risk keywords exist, use local heuristics which are conservative
+                        var local = null;
                         if (highRiskKeywords.test(lowerText)) {
-                            var local = categorizeByKeywords(text);
-                            if (local) {
-                                category = local;
-                            } else {
-                                category = deriveCategoryFromText(text);
-                            }
+                            local = categorizeByKeywords(text) || deriveCategoryFromText(text);
                         } else {
-                            // Non high-risk: prefer derived category when AI is unsure
-                            category = deriveCategoryFromText(text);
+                            // Non high-risk: prefer derived categories when AI is unsure
+                            local = deriveCategoryFromText(text);
+                        }
+
+                        if (local) {
+                            // local may be comma-separated; normalize to array
+                            if (typeof local === 'string' && local.indexOf(',') !== -1) {
+                                categoriesArray = local.split(',').map(function(c){ return String(c).toLowerCase().trim(); }).filter(Boolean);
+                            } else {
+                                categoriesArray = [String(local).toLowerCase().trim()];
+                            }
+                            if (CATEGORY_DEBUG) console.log('Local fallback used (low AI confidence or missing):', local);
                         }
                     }
 
-                    // Prevent generic categories
-                    if (category === 'emergency_report' || category === 'incident_report' || category === 'reported_incident' || /\bincident\b/.test(category)) {
-                        category = deriveCategoryFromText(text);
+                    // Merge in local heuristics to ensure the AI doesn't miss categories (union of AI + local)
+                    try {
+                        // Always gather both keyword-based and derived categories, then union them with AI results.
+                        var localRaw = categorizeByKeywords(text) || '';
+                        var localCandidates = [];
+                        if (localRaw) {
+                            if (Array.isArray(localRaw)) {
+                                localCandidates = localRaw.slice();
+                            } else {
+                                localCandidates = String(localRaw).split(/,|;|\|/).map(function(c){ return c.trim(); }).filter(Boolean);
+                            }
+                        }
+
+                        // Also include derived categories (more advanced patterns like 'homicide' from 'dead')
+                        var derivedLocal = deriveCategoryFromText(text);
+                        if (derivedLocal) {
+                            var derivedList = Array.isArray(derivedLocal) ? derivedLocal : String(derivedLocal).split(/,|;|\|/).map(function(c){ return c.trim(); }).filter(Boolean);
+                            derivedList.forEach(function(c){
+                                if (c && localCandidates.indexOf(c) === -1) {
+                                    localCandidates.push(c);
+                                }
+                            });
+                        }
+
+                        if (CATEGORY_DEBUG) console.log('Local keyword candidates before merge:', localCandidates, 'AI categories before merge:', categoriesArray);
+                        localCandidates.forEach(function(c) {
+                            var norm = String(c).toLowerCase().replace(/[^a-z0-9_\s-]/g,'').trim().replace(/\s+/g,'_');
+                            if (norm && categoriesArray.indexOf(norm) === -1) {
+                                categoriesArray.push(norm);
+                            }
+                        });
+                        if (CATEGORY_DEBUG) console.log('Categories after merging AI + local:', categoriesArray);
+                    } catch (e) {
+                        // If local heuristics throw for any reason, ignore and continue with AI categories
+                        console.warn('Error merging local heuristics:', e);
                     }
-                    
-                    // Ensure it's not a generic category
-                    if (category === 'emergency_report' || category === 'incident_report' || category === 'reported_incident') {
-                        // Fallback to intelligent text analysis
+
+                    // Remove generic placeholders and replace them using derived heuristics
+                    categoriesArray = categoriesArray.map(function(c){ return c.replace(/\s+/g,'_'); }).filter(Boolean);
+                    categoriesArray = categoriesArray.filter(function(c){ return c !== 'emergency_report' && c !== 'incident_report' && c !== 'reported_incident' && c !== 'other'; });
+
+                    if (categoriesArray.length === 0) {
                         var derivedCategory = deriveCategoryFromText(text);
-                        lastCategorizedText = text.trim();
-                        callback(derivedCategory, derivedCategory);
-                        return;
+                        categoriesArray = [derivedCategory];
                     }
-                    
-                    // If category matches predefined one, use it
-                    if (issueCategories[category]) {
-                        lastCategorizedText = text.trim();
-                        callback(category, null, reason);
+
+                    // Deduplicate while preserving order
+                    var seen = {};
+                    var finalCategories = [];
+                    categoriesArray.forEach(function(c){
+                        if (!c) return;
+                        var key = c.toLowerCase().trim();
+                        if (!seen[key]) {
+                            seen[key] = true;
+                            finalCategories.push(key);
+                        }
+                    });
+
+                    if (CATEGORY_DEBUG) {
+                        console.log('Final deduplicated categories:', finalCategories);
+                        console.log('--- Categorizer Debug END ---');
+                    }
+
+                    // Prepare final output: if any finalCategories match known issueCategories, prefer those keys; otherwise keep suggested names
+                    lastCategorizedText = text.trim();
+                    var joined = finalCategories.join(', ');
+                    // If single known category, pass as first param (legacy consumers). For multi, pass null for first param and categories as second.
+                    if (finalCategories.length === 1) {
+                        var single = finalCategories[0];
+                        if (issueCategories[single]) {
+                            callback(single, null, reason);
+                        } else {
+                            callback(single, single, reason);
+                        }
                     } else {
-                        // It's a new category suggested by OpenAI
-                        lastCategorizedText = text.trim();
-                        callback(category, category, reason); // Pass the category name as both parameters
+                        // Multiple categories: pass null as primary and provide comma-separated list as suggested categories
+                        callback(null, joined, reason);
                     }
                 } else {
                     // Fallback to intelligent text analysis
@@ -549,78 +655,12 @@
             },
             error: function(xhr, status, error) {
                 console.error('OpenAI API Error:', status, error, xhr.responseText);
-                // Fallback to keyword-based categorization
-                var fallbackCategory = categorizeByKeywords(text);
-                if (fallbackCategory) {
-                    callback(fallbackCategory, null, 'error-fallback-keyword');
+                // On API error, use merged local categories like we do when no API key
+                if (allLocalCategories.length > 0) {
+                    var errorFinalLocal = allLocalCategories.join(', ');
+                    callback(null, errorFinalLocal, 'error-fallback-local');
                 } else {
-                    // If no keyword match and API fails, analyze text more deeply
-                    var lowerText = text.toLowerCase();
-                    var suggestedCategory = null;
-                    
-                    // Suicide detection
-                    if (lowerText.indexOf('suicide') !== -1 || lowerText.indexOf('killed himself') !== -1 || lowerText.indexOf('killed herself') !== -1 || 
-                        lowerText.indexOf('took his life') !== -1 || lowerText.indexOf('took her life') !== -1 || 
-                        lowerText.indexOf('committed suicide') !== -1 || lowerText.indexOf('hanging') !== -1 || 
-                        lowerText.indexOf('hanged') !== -1) {
-                        suggestedCategory = 'suicide';
-                    }
-                    // Protest/Demonstration detection - check before traffic
-                    else if (lowerText.indexOf('protest') !== -1 || lowerText.indexOf('protesting') !== -1 || 
-                        lowerText.indexOf('demonstration') !== -1 || lowerText.indexOf('demonstrating') !== -1 ||
-                        lowerText.indexOf('rally') !== -1 || lowerText.indexOf('march') !== -1 ||
-                        ((lowerText.indexOf('roadblock') !== -1 || lowerText.indexOf('road block') !== -1) && 
-                         (lowerText.indexOf('people') !== -1 || lowerText.indexOf('protest') !== -1))) {
-                        suggestedCategory = 'protest';
-                    }
-                    // Traffic congestion
-                    else if (lowerText.indexOf('traffic') !== -1 && (lowerText.indexOf('slow') !== -1 || lowerText.indexOf('congestion') !== -1 || lowerText.indexOf('heavy') !== -1 || lowerText.indexOf('jam') !== -1)) {
-                        suggestedCategory = 'traffic_congestion';
-                    }
-                    // Medical emergency
-                    else if (lowerText.indexOf('medical') !== -1 || lowerText.indexOf('hospital') !== -1 || lowerText.indexOf('ambulance') !== -1 ||
-                             lowerText.indexOf('heart attack') !== -1 || lowerText.indexOf('stroke') !== -1 || lowerText.indexOf('unconscious') !== -1 ||
-                             lowerText.indexOf('bleeding') !== -1 || lowerText.indexOf('seizure') !== -1) {
-                        suggestedCategory = 'medical_emergency';
-                    }
-                    // Natural disaster
-                    else if (lowerText.indexOf('flood') !== -1 || lowerText.indexOf('storm') !== -1 || lowerText.indexOf('earthquake') !== -1 ||
-                             lowerText.indexOf('landslide') !== -1 || lowerText.indexOf('wildfire') !== -1) {
-                        suggestedCategory = 'natural_disaster';
-                    }
-                    // Building collapse
-                    else if (lowerText.indexOf('building') !== -1 && (lowerText.indexOf('collapse') !== -1 || lowerText.indexOf('fell') !== -1 || lowerText.indexOf('collapsed') !== -1)) {
-                        suggestedCategory = 'building_collapse';
-                    }
-                    // Missing person
-                    else if (lowerText.indexOf('missing') !== -1 || lowerText.indexOf('disappeared') !== -1 || lowerText.indexOf('lost') !== -1) {
-                        suggestedCategory = 'missing_person';
-                    }
-                    // Drug related
-                    else if (lowerText.indexOf('drug') !== -1 || lowerText.indexOf('overdose') !== -1) {
-                        suggestedCategory = 'drug_related';
-                    }
-                    // Threat or danger
-                    else if (lowerText.indexOf('danger') !== -1 || lowerText.indexOf('threat') !== -1 || lowerText.indexOf('threatening') !== -1) {
-                        suggestedCategory = 'threat';
-                    }
-                    // Suspicious activity
-                    else if (lowerText.indexOf('suspicious') !== -1 || lowerText.indexOf('suspected') !== -1) {
-                        suggestedCategory = 'suspicious_activity';
-                    }
-                    // Urgent help
-                    else if (lowerText.indexOf('help') !== -1 || lowerText.indexOf('urgent') !== -1) {
-                        suggestedCategory = 'urgent_help';
-                    }
-                    
-                    // If we found a specific category, use it; otherwise analyze text to create one
-                    if (suggestedCategory) {
-                        callback(suggestedCategory, suggestedCategory, 'error-heuristic');
-                    } else {
-                        // Analyze text to derive a meaningful category
-                        var derivedCategory = deriveCategoryFromText(text);
-                        callback(derivedCategory, derivedCategory, 'error-derived');
-                    }
+                    callback(null, 'other', 'error-other');
                 }
             }
         });
@@ -639,8 +679,8 @@
             { pattern: /\b(committed\s+suicide|killed\s+(himself|herself)|took\s+(his|her)\s+life|hanging|hanged\s+himself|hanged\s+herself)\b/i, category: 'suicide' },
             { pattern: /\bsuicide\b/i, category: 'suicide' },
             
-            // Homicide/Murder patterns
-            { pattern: /\b(murdered|killed\s+(a|the|someone)|homicide|assassination)\b/i, category: 'homicide' },
+            // Homicide/Murder patterns (including death/fatality indicators)
+            { pattern: /\b(murdered|killed\s+(a|the|someone)|homicide|assassination|dead|death|fatality|fatalities)\b/i, category: 'homicide' },
             { pattern: /\bmurder\b/i, category: 'homicide' },
             
             // Protest/Demonstration patterns - check before traffic patterns
@@ -660,7 +700,10 @@
             { pattern: /\b(fire|burning|burned|burnt|flame|flames|smoke|blaze|explosion|exploded|inferno|arson)\b/i, category: 'fire_accident' },
             
             // Robbery/Theft patterns
-            { pattern: /\b(robbery|robbed|stolen|theft|thief|thieves|steal|stealing|burglary|burglar|mugging|mugged|snatch|snatched|pickpocket|armed\s+robbery|break\s+in|break-in|stole|loot|looting)\b/i, category: 'robbery' },
+            { pattern: /\b(robbery|robbed|stolen|theft|thief|thieves|steal|stealing|burglary|burglar|mugging|mugged|snatch|snatched|pickpocket|armed\s+robbery|break\s+in|break-in|stole|loot|looting|forcefully\s+collect|collect\s+money|collect\s+cash|extort|extortion)\b/i, category: 'robbery' },
+
+            // Fraud patterns (offline/in-person fraud, scams)
+            { pattern: /\b(scam|scammed|physically\s+scammed|defraud|defrauded|con\b|conman|conmen|rip\s+off|ripped\s+off|duped|tricked|fraud|fraudulent)\b/i, category: 'fraud' },
             
             // Assault patterns
             { pattern: /\b(assault|attacked|beating|beaten|battery|physical\s+attack|violence|violent|harm|harmed|hurt|hurting)\b/i, category: 'assault' },
@@ -677,6 +720,9 @@
             // Domestic violence patterns
             { pattern: /\b(domestic\s+violence|domestic\s+abuse|spouse|partner|wife|husband|family\s+violence|home\s+violence|intimate\s+partner)\b/i, category: 'domestic_violence' },
             
+            // Sexual assault patterns (handle tense/verb variants like "forcefully sleeps", "forcefully slept")
+            { pattern: /\b(rape|raped|sexual\s+assault|sexually\s+assaulted|forced\s+to\s+have\s+sex|force(?:d|fully)?\s+(?:to\s+have\s+sex|sleep(?:s|ing|ed)?\s+with)|molest|molested|molestation|sexual\s+abuse|sex\s+abuse|defile|defiled)\b/i, category: 'sexual_assault' },
+            
             // Cultism patterns
             { pattern: /\b(cult|cultism|cultist|cultists|gang|gangs|gangster|gangsters|secret\s+society|fraternity)\b/i, category: 'cultism' },
             
@@ -691,7 +737,7 @@
             
             // Shooting/armed attack patterns - check before generic weapon
             { pattern: /\b(shooting|shoot|shot|gunfire|gun\s+fire|firing|shooter)\b/i, category: 'shooting' },
-            { pattern: /\b(armed|weapon|gun|knife|pistol|rifle|machete|stab|stabbing|stabbed|blade)\b/i, category: 'armed_attack' },
+            { pattern: /\b(armed|weapon|gun|knife|pistol|rifle|machete|stab|stabbing|stabbed|blade|herdsmen|herders|communal|ethnic|tribal|militia)\b/i, category: 'armed_attack' },
             
             // Explosion/Bomb patterns
             { pattern: /\b(bomb|explosion|exploded|explosive|bomb\s+threat)\b/i, category: 'bomb_threat' },
@@ -706,24 +752,56 @@
             { pattern: /\b(threat|threatening|danger|dangerous|risk)\b/i, category: 'threat' },
             
             // Suspicious activity patterns
-            { pattern: /\b(suspicious|suspected|suspicion)\b/i, category: 'suspicious_activity' }
+            { pattern: /\b(suspicious|suspected|suspicion)\b/i, category: 'suspicious_activity' },
+            
+            // Terrorism/Insurgency patterns - Nigerian security threats
+            { pattern: /\b(terrorism|terrorist|boko\s+haram|isis|iswap|al-qaeda|al-shabaab|insurgency|insurgent)\b/i, category: 'terrorism' },
+            { pattern: /\b(bombing|bomb\s+attack|ied|improvised\s+explosive|explosive\s+device|terror\s+attack)\b/i, category: 'terrorism' },
+            
+            // Banditry patterns - organized armed groups
+            { pattern: /\b(bandit|banditry|rustling|cattle\s+rustling|highway\s+robbery|kidnappers|mass\s+abduction|convoy\s+attack)\b/i, category: 'banditry' },
+            
+            // Communal/Ethnic conflict patterns
+            { pattern: /\b(communal\s+clash|ethnic\s+clash|border\s+dispute|land\s+dispute|chieftaincy|ethno-?religious|tribal\s+war|herdsmen\s+farmers)\b/i, category: 'communal_conflict' },
+            
+            // Political violence patterns
+            { pattern: /\b(election\s+violence|political\s+violence|political\s+assassination|electoral|campaign\s+violence|ballot\s+snatching)\b/i, category: 'political_violence' },
+            
+            // Police brutality patterns
+            { pattern: /\b(police\s+brutality|extrajudicial\s+killing|police\s+shooting|police\s+abuse|sars|death\s+in\s+custody|police\s+corruption|police\s+extortion|forcefully\s+collect|police\s+demand|bribery|graft)\b/i, category: 'police_brutality' },
+            
+            // Cybercrime patterns
+            { pattern: /\b(cybercrime|internet\s+fraud|phishing|ransomware|malware|hacking|identity\s+theft|online\s+fraud|advance\s+fee|419|romance\s+scam|credit\s+card\s+fraud|scammer|yahoo\s+boys|yahoo\s+girl|fraudulent)\b/i, category: 'cybercrime' },
+            
+            // Ritualism patterns
+            { pattern: /\b(ritual\s+killing|ritualism|occult|voodoo|human\s+sacrifice|blood\s+ritual|cult\s+ritual)\b/i, category: 'ritualism' },
+            
+            // Human trafficking patterns
+            { pattern: /\b(human\s+trafficking|sex\s+trafficking|labor\s+trafficking|forced\s+labor|child\s+labor|slave\s+trade)\b/i, category: 'human_trafficking' }
         ];
 
-        // High-priority sexual assault detection (before other patterns)
-        if (/\b(rape|raped|sexual assault|sexually assaulted|forced to have sex|forcefully slept with|molest|molested|molestation|sexual abuse|sex abuse|defile|defiled)\b/i.test(lowerText)) {
-            var ageMatch = lowerText.match(/(\b(\d{1,2})\s*(years|yrs|year|y|months|mos)\b)/i);
-            if (ageMatch && parseInt(ageMatch[2], 10) <= 16) {
-                return 'child_sexual_abuse';
-            }
-            return 'sexual_assault';
-        }
-        
         // Check patterns and collect ALL matches (for multi-category support)
         var matchedCategories = [];
+        var matchedPatternNames = []; // Track which patterns matched
         for (var i = 0; i < patterns.length; i++) {
             if (patterns[i].pattern.test(lowerText)) {
                 if (!matchedCategories.includes(patterns[i].category)) {
                     matchedCategories.push(patterns[i].category);
+                    matchedPatternNames.push('Pattern ' + i + ': ' + patterns[i].category);
+                }
+            }
+        }
+        
+        // High-priority sexual assault detection (add to matches, don't return early)
+        if (/\b(rape|raped|sexual assault|sexually assaulted|forced to have sex|forcefully slept with|molest|molested|molestation|sexual abuse|sex abuse|defile|defiled)\b/i.test(lowerText)) {
+            var ageMatch = lowerText.match(/(\b(\d{1,2})\s*(years|yrs|year|y|months|mos)\b)/i);
+            if (ageMatch && parseInt(ageMatch[2], 10) <= 16) {
+                if (!matchedCategories.includes('child_sexual_abuse')) {
+                    matchedCategories.push('child_sexual_abuse');
+                }
+            } else {
+                if (!matchedCategories.includes('sexual_assault')) {
+                    matchedCategories.push('sexual_assault');
                 }
             }
         }
@@ -764,8 +842,33 @@
             }
         }
 
-        // If we found multiple matches, return them comma-separated
+        
+        // If we found multiple matches, apply some contextual rules then return them comma-separated
         if (matchedCategories.length > 0) {
+            // Contextual rule: attacks on places of worship with explosive/bomb keywords likely indicate terrorism
+            try {
+                var lower = lowerText;
+                var placeOfWorship = /\b(church|mosque|temple|synagogue|place of worship|worship)\b/i.test(lower);
+                var deathWords = /\b(kill|killed|killed\b|murdered|died|dead|fatality|fatalities|several\s+killed|many\s+killed|many\s+dead)\b/i.test(lower);
+
+                if (placeOfWorship && (matchedCategories.indexOf('bomb_threat') !== -1 || matchedCategories.indexOf('terrorism') !== -1 || /\bbomb|explosion|bombed|bombing\b/i.test(lower))) {
+                    if (matchedCategories.indexOf('terrorism') === -1) matchedCategories.push('terrorism');
+                }
+
+                // If there's an explosion/bomb and mention of death/injuries, add homicide
+                if ((matchedCategories.indexOf('bomb_threat') !== -1 || /\bbomb|explosion|bombed|bombing\b/i.test(lower)) && deathWords) {
+                    if (matchedCategories.indexOf('homicide') === -1) matchedCategories.push('homicide');
+                }
+            } catch (e) {
+                // ignore contextual rule failures
+            }
+
+            if (CATEGORY_DEBUG) {
+                console.log('=== deriveCategoryFromText DEBUG (Pattern Match) ===');
+                console.log('Input text:', text);
+                console.log('Matched patterns:', matchedPatternNames);
+                console.log('Matched categories:', matchedCategories);
+            }
             return matchedCategories.join(', ');
         }
         
@@ -921,103 +1024,197 @@
         return 'emergency_report';
     }
     
-    // Fallback keyword-based categorization
+    // Fallback keyword-based categorization - now collects MULTIPLE categories
     function categorizeByKeywords(text) {
         // Autocorrect misspellings before keyword matching
         text = autocorrectText(text);
         var lowerText = text.toLowerCase();
+        var matchedCategories = [];
         
         // Robbery keywords - must indicate actual theft/robbery
-        if (/\b(robbery|rob|robbed|stolen|theft|thief|thieves|steal|stealing|burglary|burglar|mugging|mugged|snatch|snatched|pickpocket|armed robbery|break in|break-in|stole|loot|looting)\b/i.test(lowerText)) {
-            return 'robbery';
+        if (/\b(robbery|rob|robbed|stolen|theft|thief|thieves|steal|stealing|burglary|burglar|mugging|mugged|snatch|snatched|pickpocket|armed robbery|break in|break-in|stole|loot|looting|forcefully\s+collect|collect\s+money|collect\s+cash|extort|extortion)\b/i.test(lowerText)) {
+            matchedCategories.push('robbery');
         }
         
         // Road accident keywords - must indicate actual accident/crash, not just traffic
         // Require accident-related words, not just traffic/road words
         if (/\b(accident|crash|crashed|collision|collided|hit by|hit a|hitting a|hitting the|vehicle crash|car crash|truck crash|bus crash|motorcycle crash|bike crash|road accident|highway accident|injured in|injury from|fatal accident|casualty|casualties|ambulance|wreck|wrecked|overturned|overturn|vehicles collided|cars collided|collision between)\b/i.test(lowerText)) {
-            return 'road_accident';
+            matchedCategories.push('road_accident');
         }
         
         // Fire accident keywords
         if (/\b(fire|burning|burned|burnt|flame|flames|smoke|smoking|blaze|blazing|explosion|explode|exploded|burn|inferno|arson|ignite|ignited|combustion|firefighter|fire fighter|fire department)\b/i.test(lowerText)) {
-            return 'fire_accident';
+            matchedCategories.push('fire_accident');
         }
         
         // Cultism keywords
         if (/\b(cult|cultism|cultist|cultists|gang|gangs|gangster|gangsters|violence|violent|attack|attacked|assault|assaulted|fight|fighting|fought|conflict|confrontation|rival|rivals|secret society|fraternity)\b/i.test(lowerText)) {
-            return 'cultism';
+            matchedCategories.push('cultism');
         }
         
         // Assault keywords
         if (/\b(assault|attacked|beating|beaten|battery|physical attack|violence|violent|harm|harmed|hurt|hurting)\b/i.test(lowerText)) {
-            return 'assault';
+            if (!matchedCategories.includes('assault')) {
+                matchedCategories.push('assault');
+            }
         }
         
         // Kidnapping keywords
         if (/\b(kidnap|kidnapping|kidnapped|abduct|abducted|abduction|hostage|hostages|ransom|taken|missing person)\b/i.test(lowerText)) {
-            return 'kidnapping';
+            matchedCategories.push('kidnapping');
         }
         
         // Vandalism keywords
         if (/\b(vandalism|vandalize|vandalized|destruction|destroyed|damage|damaged|graffiti|defaced|property damage)\b/i.test(lowerText)) {
-            return 'vandalism';
+            matchedCategories.push('vandalism');
         }
         
         // Domestic violence keywords
         if (/\b(domestic violence|domestic abuse|spouse|partner|wife|husband|family violence|home violence|intimate partner)\b/i.test(lowerText)) {
-            return 'domestic_violence';
+            matchedCategories.push('domestic_violence');
         }
         
         // Suicide keywords
         if (/\b(suicide|suicidal|killed himself|killed herself|took his life|took her life|committed suicide|self harm|self-harm|hanging|hanged|overdose|overdosed|jumped|jumping)\b/i.test(lowerText)) {
-            return 'suicide';
+            matchedCategories.push('suicide');
         }
 
-        // Sexual assault / child sexual abuse keywords
-        if (/\b(rape|raped|sexual assault|sexually assaulted|forced to have sex|forcefully slept with|molest|molested|molestation|sexual abuse|sex abuse|defile|defiled)\b/i.test(lowerText)) {
+        // Sexual assault / child sexual abuse keywords (handle tense/verb variants like "forcefully sleeps", "forcefully slept")
+        if (/\b(rape|raped|sexual\s+assault|sexually\s+assaulted|forced\s+to\s+have\s+sex|force(?:d|fully)?\s+(?:to\s+have\s+sex|sleep(?:s|ing|ed)?\s+with)|molest|molested|molestation|sexual\s+abuse|sex\s+abuse|defile|defiled)\b/i.test(lowerText)) {
             // detect age mentions near the sexual terms
             var ageMatch = lowerText.match(/(\b(\d{1,2})\s*(years|yrs|year|y|months|mos)\b)/i);
             if (ageMatch && parseInt(ageMatch[2], 10) <= 16) {
-                return 'child_sexual_abuse';
+                matchedCategories.push('child_sexual_abuse');
+            } else {
+                matchedCategories.push('sexual_assault');
             }
-            return 'sexual_assault';
         }
         
         // Medical emergency keywords
         if (/\b(medical emergency|heart attack|stroke|seizure|unconscious|passed out|fainted|bleeding|severe pain|chest pain|difficulty breathing|can't breathe|choking|allergic reaction|diabetic|epilepsy|convulsion)\b/i.test(lowerText)) {
-            return 'medical_emergency';
+            matchedCategories.push('medical_emergency');
         }
         
         // Natural disaster keywords
         if (/\b(flood|flooding|flooded|storm|hurricane|tornado|earthquake|landslide|mudslide|tsunami|wildfire|drought|avalanche)\b/i.test(lowerText)) {
-            return 'natural_disaster';
+            matchedCategories.push('natural_disaster');
         }
         
         // Building/structure collapse keywords
         if (/\b(building collapse|building collapsed|structure collapse|roof collapse|wall collapse|building fell|structure fell|construction accident)\b/i.test(lowerText)) {
-            return 'building_collapse';
+            matchedCategories.push('building_collapse');
         }
         
         // Missing person keywords
         if (/\b(missing person|missing child|missing|disappeared|lost|can't find|haven't seen|last seen)\b/i.test(lowerText)) {
-            return 'missing_person';
+            matchedCategories.push('missing_person');
         }
         
         // Drug-related keywords
         if (/\b(drug|drugs|overdose|overdosed|drug dealer|drug dealing|substance abuse|narcotics|illegal drugs|drug trafficking)\b/i.test(lowerText)) {
-            return 'drug_related';
+            matchedCategories.push('drug_related');
+        }
+        
+        // Homicide/Murder/Death keywords
+        if (/\b(murdered|killed|homicide|assassination|dead|death|fatality|fatalities|murder)\b/i.test(lowerText)) {
+            if (!matchedCategories.includes('homicide')) {
+                matchedCategories.push('homicide');
+            }
+        }
+        
+        // Armed attack keywords - includes herdsmen/communal conflicts
+        if (/\b(armed|weapon|gun|knife|pistol|rifle|machete|stab|stabbing|stabbed|blade|armed robbery|armed attack|herdsmen|herders|communal|ethnic|tribal|conflict|militia)\b/i.test(lowerText)) {
+            // If homicide already detected + armed/conflict keywords, it's likely armed_attack
+            if (matchedCategories.includes('homicide') || /\b(killing|killed|murder|murdered)\b/i.test(lowerText)) {
+                if (!matchedCategories.includes('armed_attack')) {
+                    matchedCategories.push('armed_attack');
+                }
+            } else if (!matchedCategories.includes('armed_attack')) {
+                matchedCategories.push('armed_attack');
+            }
         }
         
         // Shooting/armed attack keywords
         if (/\b(shooting|shoot|shot|gunfire|gun\s+fire|firing|shooter)\b/i.test(lowerText)) {
-            return 'shooting';
+            matchedCategories.push('shooting');
         }
         
-        if (/\b(armed|weapon|gun|knife|pistol|rifle|machete|stab|stabbing|stabbed|blade|armed robbery|armed attack)\b/i.test(lowerText)) {
-            return 'armed_attack';
+        // Terrorism/Insurgency keywords
+        if (/\b(terrorism|terrorist|boko\s+haram|isis|iswap|al-qaeda|al-shabaab|insurgency|insurgent|bombing|bomb|explosion|explode|ied|improvised|explosive|device|terrorist\s+attack|terror\s+attack)\b/i.test(lowerText)) {
+            if (!matchedCategories.includes('terrorism')) {
+                matchedCategories.push('terrorism');
+            }
         }
         
-        // If no specific category found, return null to let OpenAI suggest a new category
+        // Banditry keywords (armed robbery by large organized groups)
+        if (/\b(bandit|bandits|banditry|rustling|cattle\s+rustling|highway\s+robbery|armed\s+gang|armed\s+group|kidnappers|mass\s+abduction|convoy\s+attack)\b/i.test(lowerText)) {
+            if (!matchedCategories.includes('banditry')) {
+                matchedCategories.push('banditry');
+            }
+        }
+        
+        // Communal/Ethnic conflict keywords (replaces generic 'conflict')
+        if (/\b(communal\s+clash|ethnic\s+clash|border\s+dispute|land\s+dispute|chieftaincy\s+dispute|communal\s+war|ethno-?religious|tribal\s+war|herdsmen\s+farmers|pastoralist|settler|indigene)\b/i.test(lowerText)) {
+            if (!matchedCategories.includes('communal_conflict')) {
+                matchedCategories.push('communal_conflict');
+            }
+        }
+        
+        // Political violence / Election violence keywords
+        if (/\b(election\s+violence|political\s+violence|political\s+thuggery|political\s+assassination|electoral|campaign\s+violence|political\s+rally|ballot\s+snatching|election\s+rigging)\b/i.test(lowerText)) {
+            if (!matchedCategories.includes('political_violence')) {
+                matchedCategories.push('political_violence');
+            }
+        }
+        
+        // Police brutality keywords
+        if (/\b(police\s+brutality|police\s+violence|extrajudicial|extrajudicial\s+killing|police\s+shooting|police\s+harassment|police\s+abuse|sars|special\s+anti-?robbery|death\s+in\s+custody|unlawful\s+arrest|police\s+corruption|police\s+extortion|forcefully\s+collect|police\s+demand|police\s+bribe|bribery|graft)\b/i.test(lowerText)) {
+            if (!matchedCategories.includes('police_brutality')) {
+                matchedCategories.push('police_brutality');
+            }
+        }
+        
+        // Fraud keywords (offline / in-person scams)
+        if (/\b(scam|scammed|physically\s+scammed|defraud|defrauded|conman|conmen|rip\s+off|ripped\s+off|duped|tricked|fraud|fraudulent)\b/i.test(lowerText)) {
+            if (!matchedCategories.includes('fraud')) {
+                matchedCategories.push('fraud');
+            }
+        }
+        
+        // Cybercrime keywords (online/internet-specific frauds)
+        if (/\b(cybercrime|internet\s+fraud|phishing|ransomware|malware|hacking|identity\s+theft|online\s+fraud|advance\s+fee|419|romance\s+scam|credit\s+card\s+fraud|scammer|yahoo\s+boys|yahoo\s+girl|fraudulent)\b/i.test(lowerText)) {
+            if (!matchedCategories.includes('cybercrime')) {
+                matchedCategories.push('cybercrime');
+            }
+        }
+        
+        // Ritualism keywords
+        if (/\b(ritual|ritual\s+killing|ritualism|occult|voodoo|juju|muti|human\s+sacrifice|blood\s+ritual|ceremonial\s+killing|cult\s+ritual)\b/i.test(lowerText)) {
+            if (!matchedCategories.includes('ritualism')) {
+                matchedCategories.push('ritualism');
+            }
+        }
+        
+        // Human trafficking keywords
+        if (/\b(human\s+trafficking|trafficking\s+in\s+persons|sex\s+trafficking|labor\s+trafficking|prostitution\s+ring|human\s+smuggling|forced\s+labor|child\s+labor|slave\s+trade)\b/i.test(lowerText)) {
+            if (!matchedCategories.includes('human_trafficking')) {
+                matchedCategories.push('human_trafficking');
+            }
+        }
+        
+        
+        if (CATEGORY_DEBUG) {
+            console.log('=== categorizeByKeywords DEBUG ===');
+            console.log('Input text:', text);
+            console.log('Matched categories:', matchedCategories);
+        }
+        
+        // If multiple categories matched, return comma-separated
+        if (matchedCategories.length > 0) {
+            return matchedCategories.join(', ');
+        }
+        
+        // If no specific category found, return null to let deriveCategoryFromText or OpenAI suggest
         return null;
     }
     
@@ -1097,15 +1294,23 @@
 
                 // Now categorize the corrected text
                 categorizeWithOpenAI(correctedText, function(category, dynamicCategory, reason) {
-                    if (category) {
-                        var categoryInfo = getCategoryInfo(category);
-                        tagElement.text(categoryInfo.displayName)
+                    var categories = [];
+                    if (category) categories = [category];
+                    else if (dynamicCategory) categories = String(dynamicCategory).split(',').map(function(c){ return c.trim(); }).filter(Boolean);
+
+                    if (categories.length > 0) {
+                        // Display comma-joined friendly names; use first category's color
+                        var displayNames = categories.map(function(c){
+                            try { return getCategoryInfo(c).displayName; } catch (e) { return c; }
+                        });
+                        var firstInfo = getCategoryInfo(categories[0]);
+                        tagElement.text(displayNames.join(', '))
                                   .attr('title', reason || '')
                                   .css({
                                       'display': 'inline-block',
-                                      'background': categoryInfo.bgColor,
-                                      'color': categoryInfo.color,
-                                      'border-color': categoryInfo.color
+                                      'background': firstInfo.bgColor,
+                                      'color': firstInfo.color,
+                                      'border-color': firstInfo.color
                                   });
                     } else {
                         tagElement.css('display', 'none');
@@ -1146,15 +1351,22 @@
 
             // Immediately categorize the corrected text
             categorizeWithOpenAI(correctedText, function(category, dynamicCategory, reason) {
-                if (category) {
-                    var categoryInfo = getCategoryInfo(category);
-                    tagElement.text(categoryInfo.displayName)
+                var categories = [];
+                if (category) categories = [category];
+                else if (dynamicCategory) categories = String(dynamicCategory).split(',').map(function(c){ return c.trim(); }).filter(Boolean);
+
+                if (categories.length > 0) {
+                    var displayNames = categories.map(function(c){
+                        try { return getCategoryInfo(c).displayName; } catch (e) { return c; }
+                    });
+                    var firstInfo = getCategoryInfo(categories[0]);
+                    tagElement.text(displayNames.join(', '))
                               .attr('title', reason || '')
                               .css({
                                   'display': 'inline-block',
-                                  'background': categoryInfo.bgColor,
-                                  'color': categoryInfo.color,
-                                  'border-color': categoryInfo.color
+                                  'background': firstInfo.bgColor,
+                                  'color': firstInfo.color,
+                                  'border-color': firstInfo.color
                               });
                 } else {
                     tagElement.css('display', 'none');
@@ -1851,4 +2063,32 @@
         );
     });
     
+    // Debug helper: run from browser console to get detailed categorizer output for any text.
+    // Example (in browser devtools):
+    //   debugCategorize("A guy forcefully sleeps with his girlfriend today and killed her");
+    window.debugCategorize = function(text) {
+        try {
+            console.log('=== debugCategorize START ===');
+            console.log('Original text:', text);
+            var corrected = autocorrectText(text);
+            console.log('Autocorrected:', corrected);
+
+            var kb = categorizeByKeywords(corrected);
+            console.log('categorizeByKeywords ->', kb);
+
+            var dr = deriveCategoryFromText(corrected);
+            console.log('deriveCategoryFromText ->', dr);
+
+            // Run the full pipeline (may call API if OPENAI_API_KEY is set)
+            categorizeWithOpenAI(corrected, function(category, dynamicCategory, reason) {
+                console.log('categorizeWithOpenAI callback -> primary category:', category);
+                console.log('categorizeWithOpenAI callback -> dynamicCategory (comma list):', dynamicCategory);
+                console.log('categorizeWithOpenAI callback -> reason:', reason);
+                console.log('=== debugCategorize END ===');
+            });
+        } catch (e) {
+            console.error('debugCategorize error:', e);
+        }
+    };
+
 })(jQuery);
