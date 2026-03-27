@@ -1,0 +1,23 @@
+{
+    "safenid": "SN8755",
+    "phone": "08134567890",
+    "nin": "56789012345",
+    "firstname": "Chioma",
+    "middlename": "Amara",
+    "lastname": "Eze",
+    "gender": "Female",
+    "dateOfBirth": "1992-07-25",
+    "email": "chioma.eze@email.com",
+    "address": "15 Enugu Road",
+    "state": "Enugu",
+    "lga": "Enugu East",
+    "registered_date": "2026-03-27 14:42:00",
+    "payment_status": "completed",
+    "payment_date": "2026-03-27 14:42:09",
+    "payment_reference": "SN2026032714420582516cb5",
+    "payment_amount": "5000",
+    "payment_currency": "NGN",
+    "payment_expiry": "2027-03-27 14:42:09",
+    "payment_method": "Quickteller",
+    "last_payment_check": "2026-03-27 14:42:09"
+}

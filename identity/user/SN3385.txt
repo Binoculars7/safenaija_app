@@ -1,0 +1,23 @@
+{
+    "safenid": "SN3385",
+    "phone": "08123456789",
+    "nin": "23456789012",
+    "firstname": "Amina",
+    "middlename": "Zainab",
+    "lastname": "Bello",
+    "gender": "Female",
+    "dateOfBirth": "1995-08-22",
+    "email": "amina.bello@email.com",
+    "address": "45 Ahmadu Bello Way",
+    "state": "Kaduna",
+    "lga": "Kaduna North",
+    "registered_date": "2026-03-27 14:06:56",
+    "payment_status": "completed",
+    "payment_date": "2026-03-27 14:07:10",
+    "payment_reference": "SN2026032714070029d56b30",
+    "payment_amount": "5000",
+    "payment_currency": "NGN",
+    "payment_expiry": "2027-03-27 14:07:10",
+    "payment_method": "Quickteller",
+    "last_payment_check": "2026-03-27 14:07:10"
+}

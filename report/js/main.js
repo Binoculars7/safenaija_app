@@ -11,10 +11,8 @@
     };
     spinner();
     
-    
     // Initiate the wowjs
     new WOW().init();
-
 
     // Sticky Navbar
     $(window).scroll(function () {
@@ -25,13 +23,11 @@
         }
     });
 
-
     // Facts counter
     $('[data-toggle="counter-up"]').counterUp({
         delay: 10,
         time: 2000
     });
-    
     
     // Back to top button
     $(window).scroll(function () {
@@ -46,1336 +42,562 @@
         return false;
     });
 
-
     // Testimonials carousel
-    $(".testimonial-carousel").owlCarousel({
-        items: 1,
-        autoplay: true,
-        smartSpeed: 1000,
-        dots: true,
-        loop: true,
-        nav: true,
-        navText : [
-            '<i class="bi bi-chevron-left"></i>',
-            '<i class="bi bi-chevron-right"></i>'
-        ]
-    });
+    if ($(".testimonial-carousel").length > 0) {
+        $(".testimonial-carousel").owlCarousel({
+            items: 1,
+            autoplay: true,
+            smartSpeed: 1000,
+            dots: true,
+            loop: true,
+            nav: true,
+            navText : [
+                '<i class="bi bi-chevron-left"></i>',
+                '<i class="bi bi-chevron-right"></i>'
+            ]
+        });
+    }
     
-    // OpenAI API Key - Add your OpenAI API key here
-    // Get your API key from: https://platform.openai.com/api-keys
-    // NOTE: API calls may fail if your OpenAI plan quota is exceeded. To force the local heuristics
-    // to be used (no API calls), set OPENAI_API_KEY = '' below.
-    var OPENAI_API_KEY = ''; // Disabled by default to avoid quota errors. Insert your key if you want AI assistance.
-    // Debug flag: set to true to emit verbose categorization logs to console
-    var CATEGORY_DEBUG = true;
+
+    // ============================================
+    // Configuration - Gemini API
+    // ============================================
+    var GEMINI_API_KEY = 'AIzaSyDgrfEeH5w4rxGp6QNEuoCd4qDSjvMMXN4';
+    var GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
     
-    // Issue categories list
+    // Issue categories
     var issueCategories = {
-        'robbery': {
-            displayName: 'Robbery',
-            color: '#d9534f',
-            bgColor: '#f8d7da'
-        },
-        'road_accident': {
-            displayName: 'Road Accident',
-            color: '#f0ad4e',
-            bgColor: '#fff3cd'
-        },
-        'fire_accident': {
-            displayName: 'Fire Accident',
-            color: '#d9534f',
-            bgColor: '#f8d7da'
-        },
-        'cultism': {
-            displayName: 'Cultism',
-            color: '#5cb85c',
-            bgColor: '#d4edda'
-        },
-        'assault': {
-            displayName: 'Assault',
-            color: '#d9534f',
-            bgColor: '#f8d7da'
-        },
-        'kidnapping': {
-            displayName: 'Kidnapping',
-            color: '#d9534f',
-            bgColor: '#f8d7da'
-        },
-        'vandalism': {
-            displayName: 'Vandalism',
-            color: '#5bc0de',
-            bgColor: '#d1ecf1'
-        },
-        'domestic_violence': {
-            displayName: 'Domestic Violence',
-            color: '#d9534f',
-            bgColor: '#f8d7da'
-        },
-        'sexual_assault': {
-            displayName: 'Sexual Assault',
-            color: '#6f42c1',
-            bgColor: '#f3e8ff'
-        },
-        'child_sexual_abuse': {
-            displayName: 'Child Sexual Abuse',
-            color: '#e83e8c',
-            bgColor: '#ffe6f0'
-        },
-        'armed_attack': {
-            displayName: 'Armed Attack',
-            color: '#d9534f',
-            bgColor: '#f8d7da'
-        },
-        'shooting': {
-            displayName: 'Shooting',
-            color: '#d9534f',
-            bgColor: '#f8d7da'
-        },
-        'homicide': {
-            displayName: 'Homicide',
-            color: '#d9534f',
-            bgColor: '#f8d7da'
-        },
-        'suicide': {
-            displayName: 'Suicide',
-            color: '#5c5c7c',
-            bgColor: '#e6e6fa'
-        },
-        'terrorism': {
-            displayName: 'Terrorism/Insurgency',
-            color: '#721c24',
-            bgColor: '#f8d7da'
-        },
-        'banditry': {
-            displayName: 'Banditry',
-            color: '#d9534f',
-            bgColor: '#f8d7da'
-        },
-        'communal_conflict': {
-            displayName: 'Communal/Ethnic Conflict',
-            color: '#ff6b6b',
-            bgColor: '#ffe0e0'
-        },
-        'political_violence': {
-            displayName: 'Political Violence',
-            color: '#d32f2f',
-            bgColor: '#ffcdd2'
-        },
-        'police_brutality': {
-            displayName: 'Police Brutality',
-            color: '#6c3483',
-            bgColor: '#ebdef0'
-        },
-        'cybercrime': {
-            displayName: 'Cybercrime',
-            color: '#0c5460',
-            bgColor: '#d1ecf1'
-        },
-        'fraud': {
-            displayName: 'Fraud',
-            color: '#ff9800',
-            bgColor: '#fff3e0'
-        },
-        'ritualism': {
-            displayName: 'Ritualism',
-            color: '#663399',
-            bgColor: '#f0e6ff'
-        },
-        'human_trafficking': {
-            displayName: 'Human Trafficking',
-            color: '#8b008b',
-            bgColor: '#ffe6f0'
-        },
-        'environmental_disaster': {
-            displayName: 'Environmental Disaster',
-            color: '#228b22',
-            bgColor: '#d4edda'
-        },
-        'protest': {
-            displayName: 'Protest/Demonstration',
-            color: '#0275d8',
-            bgColor: '#d1ecf1'
-        },
-        'traffic_congestion': {
-            displayName: 'Traffic Congestion',
-            color: '#f0ad4e',
-            bgColor: '#fff3cd'
-        },
-        'other': {
-            displayName: 'Other',
-            color: '#6c757d',
-            bgColor: '#e2e3e5'
-        }
+        'accident': { displayName: 'Accident', color: '#f0ad4e', bgColor: '#fff3cd' },
+        'fire': { displayName: 'Fire', color: '#d9534f', bgColor: '#f8d7da' },
+        'robbery': { displayName: 'Robbery', color: '#d9534f', bgColor: '#f8d7da' },
+        'kidnapping': { displayName: 'Kidnapping', color: '#d9534f', bgColor: '#f8d7da' },
+        'murder': { displayName: 'Murder', color: '#8b0000', bgColor: '#ffcccc' },
+        'fraud': { displayName: 'Fraud', color: '#ff9800', bgColor: '#fff3e0' },
+        'health': { displayName: 'Health', color: '#5cb85c', bgColor: '#d4edda' },
+        'vandalism': { displayName: 'Vandalism', color: '#5bc0de', bgColor: '#d1ecf1' },
+        'misplace': { displayName: 'Misplace', color: '#6c757d', bgColor: '#e2e3e5' }
     };
-    
-    // Debounce timer for API calls
-    var categorizationTimer = null;
-    var lastCategorizedText = '';
-    
-    // Function to get category info (handles both predefined and dynamic categories)
-    function getCategoryInfo(categoryName) {
-        // Check if it's a predefined category
-        if (issueCategories[categoryName]) {
-            return issueCategories[categoryName];
-        }
-        
-        // It's a dynamic category - create info for it
-        // Use a default color scheme for new categories
-        return {
-            displayName: formatCategoryName(categoryName),
-            color: '#6c757d',
-            bgColor: '#e2e3e5'
-        };
-    }
-    
-    // Function to format category name (convert snake_case to Title Case)
-    function formatCategoryName(category) {
-        return category.split('_').map(function(word) {
-            return word.charAt(0).toUpperCase() + word.slice(1);
-        }).join(' ');
-    }
-    
-    // Initialize Typo.js spell checker instance
-    var typoChecker = null;
-    
-    // Initialize spell checker on document ready
-    function initializeSpellChecker() {
-        // Using dictionary-based corrections instead of Typo.js
-        console.log('Spell checker initialized with dictionary-based corrections');
-    }
-    
-    // Function to get best correction suggestion for a misspelled word
-    function getBestCorrection(word) {
-        if (!word || word.length < 2) {
-            return null;
-        }
-        
-        // Preserve original case
-        var isCapitalized = word.charAt(0) === word.charAt(0).toUpperCase();
-        var lowerWord = word.toLowerCase();
-        
-        if (typoChecker && typeof typoChecker.check === 'function') {
-            try {
-                // Check if word is correctly spelled
-                if (typoChecker.check(lowerWord)) {
-                    return null; // Word is correct
-                }
-                
-                // Get suggestions
-                var suggestions = typoChecker.suggest(lowerWord, 1); // Get top suggestion
-                
-                if (suggestions && suggestions.length > 0) {
-                    var suggestion = suggestions[0];
-                    
-                    // Preserve original case
-                    if (isCapitalized && suggestion.length > 0) {
-                        suggestion = suggestion.charAt(0).toUpperCase() + suggestion.slice(1);
-                    }
-                    
-                    return suggestion;
-                }
-            } catch (e) {
-                console.warn('Error checking spelling:', e);
-            }
-        }
-        
-        return null;
-    }
-    
-    // Enhanced function to autocorrect misspelled English words in text
-    function autocorrectText(text) {
-        if (!text || text.trim().length === 0) {
-            return text;
-        }
-        
-        var correctedText = text;
-        
-        // Comprehensive dictionary of common misspellings and corrections
-        var corrections = [
-            // Protest related
-            { wrong: /\bprotestin\b/gi, correct: 'protesting' },
-            { wrong: /\bprotestor\b/gi, correct: 'protesters' },
-            { wrong: /\bprotestrs\b/gi, correct: 'protesters' },
-            { wrong: /\bdemonstratin\b/gi, correct: 'demonstrating' },
-            { wrong: /\broad\s+blok\b/gi, correct: 'road block' },
-            { wrong: /\broad\s+bloc\b/gi, correct: 'road block' },
-            
-            // Suicide related
-            { wrong: /\bsuicid\b/gi, correct: 'suicide' },
-            { wrong: /\bsuicde\b/gi, correct: 'suicide' },
-            { wrong: /\bcommited\b/gi, correct: 'committed' },
-            
-            // Accident related
-            { wrong: /\baccidnt\b/gi, correct: 'accident' },
-            { wrong: /\baccidnet\b/gi, correct: 'accident' },
-            { wrong: /\bacident\b/gi, correct: 'accident' },
-            { wrong: /\bcollison\b/gi, correct: 'collision' },
-            { wrong: /\bcollision\b/gi, correct: 'collision' },
-            
-            // Medical related
-            { wrong: /\bunconsious\b/gi, correct: 'unconscious' },
-            { wrong: /\bunconcious\b/gi, correct: 'unconscious' },
-            { wrong: /\bbleeding\b/gi, correct: 'bleeding' },
-            { wrong: /\bseizure\b/gi, correct: 'seizure' },
-            
-            // Kidnapping related
-            { wrong: /\bkidnapin\b/gi, correct: 'kidnapping' },
-            { wrong: /\bkidnaping\b/gi, correct: 'kidnapping' },
-            { wrong: /\bkidnapped\b/gi, correct: 'kidnapped' },
-            
-            // Missing person related
-            { wrong: /\bdisapeared\b/gi, correct: 'disappeared' },
-            { wrong: /\bdisappeared\b/gi, correct: 'disappeared' },
-            
-            // Common misspellings
-            { wrong: /\bthier\b/gi, correct: 'their' },
-            { wrong: /\brecieve\b/gi, correct: 'receive' },
-            { wrong: /\boccured\b/gi, correct: 'occurred' },
-            { wrong: /\boccuring\b/gi, correct: 'occurring' },
-            { wrong: /\boccassion\b/gi, correct: 'occasion' },
-            { wrong: /\boccassional\b/gi, correct: 'occasional' },
-            { wrong: /\barent\b/gi, correct: 'aren\'t' },
-            { wrong: /\bdont\b/gi, correct: 'don\'t' },
-            { wrong: /\bwont\b/gi, correct: 'won\'t' },
-            { wrong: /\bcant\b/gi, correct: 'can\'t' },
-            { wrong: /\bisnt\b/gi, correct: 'isn\'t' },
-            { wrong: /\bhasnt\b/gi, correct: 'hasn\'t' },
-            { wrong: /\bhavent\b/gi, correct: 'haven\'t' },
-            { wrong: /\bwoudl\b/gi, correct: 'would' },
-            { wrong: /\bshoudl\b/gi, correct: 'should' },
-            { wrong: /\bcoudl\b/gi, correct: 'could' },
-            { wrong: /\boccuring\b/gi, correct: 'occurring' },
-            { wrong: /\bseperate\b/gi, correct: 'separate' },
-            { wrong: /\bdefinately\b/gi, correct: 'definitely' },
-            { wrong: /\bdefinite\b/gi, correct: 'definite' },
-            { wrong: /\bdisapear\b/gi, correct: 'disappear' },
-            { wrong: /\bneccessary\b/gi, correct: 'necessary' },
-            { wrong: /\bneccessarily\b/gi, correct: 'necessarily' },
-            { wrong: /\balot\b/gi, correct: 'a lot' },
-            { wrong: /\bwierd\b/gi, correct: 'weird' },
-            { wrong: /\bgoverment\b/gi, correct: 'government' },
-            { wrong: /\benvirment\b/gi, correct: 'environment' },
-            { wrong: /\bcivillian\b/gi, correct: 'civilian' },
-            { wrong: /\bcivilan\b/gi, correct: 'civilian' },
-            { wrong: /\bsuspicious\b/gi, correct: 'suspicious' },
-            { wrong: /\bsuspision\b/gi, correct: 'suspicion' },
-            { wrong: /\bterorist\b/gi, correct: 'terrorist' },
-            { wrong: /\bterroism\b/gi, correct: 'terrorism' },
-            { wrong: /\brob\b/gi, correct: 'rob' },
-            { wrong: /\brobery\b/gi, correct: 'robbery' },
-            { wrong: /\bvandal\b/gi, correct: 'vandal' },
-            { wrong: /\bvandelism\b/gi, correct: 'vandalism' },
-            { wrong: /\bassault\b/gi, correct: 'assault' },
-            { wrong: /\bashamed\b/gi, correct: 'ashamed' },
-            { wrong: /\bemphasize\b/gi, correct: 'emphasize' },
-            { wrong: /\bemphasise\b/gi, correct: 'emphasise' },
-            { wrong: /\bemergecy\b/gi, correct: 'emergency' },
-            { wrong: /\bemergancy\b/gi, correct: 'emergency' },
-            { wrong: /\bimmediately\b/gi, correct: 'immediately' },
-            { wrong: /\bimmidiate\b/gi, correct: 'immediate' },
-            { wrong: /\bimmidiatly\b/gi, correct: 'immediately' }
-        ];
-        
-        // Apply all corrections
-        for (var i = 0; i < corrections.length; i++) {
-            correctedText = correctedText.replace(corrections[i].wrong, corrections[i].correct);
-        }
-        
-        return correctedText;
-    }
-    
-    // Function to categorize text using OpenAI
-    function categorizeWithOpenAI(text, callback) {
-        if (!text || text.trim().length < 10) {
-            callback(null, null);
-            return;
-        }
-        
-        // Autocorrect misspellings before categorization
-        text = autocorrectText(text);
-        
-        // Don't categorize if text hasn't changed
-        if (text.trim() === lastCategorizedText) {
-            return;
-        }
-        
-        // ALWAYS collect local categories first (guaranteed multi-category detection)
-        var localKeywordCategories = categorizeByKeywords(text);
-        var localDerivedCategories = deriveCategoryFromText(text);
-        
-        // Merge both local sources into a single array
-        var allLocalCategories = [];
-        if (localKeywordCategories) {
-            allLocalCategories = String(localKeywordCategories).split(/,|;/).map(function(c){ return c.trim().toLowerCase(); }).filter(Boolean);
-        }
-        if (localDerivedCategories) {
-            String(localDerivedCategories).split(/,|;/).map(function(c){ return c.trim().toLowerCase(); }).filter(Boolean).forEach(function(c){
-                if (allLocalCategories.indexOf(c) === -1) {
-                    allLocalCategories.push(c);
+
+    // ============================================
+    // FALLBACK: Comprehensive keyword-based classifier
+    // Weights longer/more-specific phrases higher.
+    // ============================================
+    var categoryKeywords = {
+        'fire': [
+            'fire', 'flame', 'flames', 'burning', 'burned', 'burn', 'burnt',
+            'blaze', 'smoke', 'inferno', 'arson', 'combustion', 'ignite', 'ignited',
+            'explosion', 'explode', 'exploded', 'ablaze', 'wildfire', 'house fire',
+            'gas leak', 'charred', 'ember', 'on fire', 'caught fire', 'set ablaze',
+            'fire outbreak', 'building on fire', 'car on fire'
+        ],
+        'robbery': [
+            'rob', 'robbery', 'robbed', 'steal', 'stolen', 'theft', 'thief', 'thieves',
+            'burglar', 'burglary', 'broke in', 'break in', 'break-in', 'broken into',
+            'armed robbers', 'armed robbery', 'gunpoint', 'knifepoint',
+            'mugged', 'mugging', 'pickpocket', 'loot', 'looted', 'looting',
+            'carjack', 'carjacking', 'hijack', 'snatch', 'snatched', 'bag snatched',
+            'bandit', 'raided', 'raid', 'heist', 'held at gunpoint',
+            'took my', 'took our', 'seized property', 'stole my', 'stole our',
+            'dispossessed', 'forcefully collected', 'robbers broke', 'thieves entered'
+        ],
+        'kidnapping': [
+            'kidnap', 'kidnapped', 'kidnapping', 'abduct', 'abducted', 'abduction',
+            'missing person', 'person is missing', 'hostage', 'ransom', 'taken away',
+            'dragged away', 'child taken', 'gone missing', 'disappeared', 'trafficking',
+            'human trafficking', 'forced into a car', 'held captive', 'captive',
+            'seized person', 'taken by force', 'abductors', 'kidnappers', 'taken from home'
+        ],
+        'accident': [
+            'accident', 'crash', 'crashed', 'collision', 'hit and run', 'car crash',
+            'road accident', 'vehicle accident', 'run over', 'knocked down',
+            'fell', 'fall', 'fallen', 'slip', 'slipped', 'tripped', 'trip',
+            'injured', 'injury', 'hurt', 'wound', 'wounded', 'broken bone', 'fracture',
+            'fractured', 'traffic accident', 'overturn', 'overturned', 'vehicle overturned',
+            'skidded', 'motorbike accident', 'motorcycle crash', 'hit by car',
+            'hit by truck', 'electrocuted', 'electrocution', 'drowning', 'drowned',
+            'flood accident', 'building collapse', 'scaffold fell', 'construction accident',
+            'hit by vehicle', 'knocked by', 'road mishap', 'fatal crash'
+        ],
+        'fraud': [
+            'fraud', 'scam', 'scammed', 'swindle', 'swindled', 'fake', 'forged', 'forgery',
+            'counterfeit', 'deceive', 'deceived', 'deception', 'impersonate', 'impersonation',
+            'phishing', 'ponzi', 'pyramid scheme', '419', 'advance fee', 'fake website',
+            'identity theft', 'credit card fraud', 'wire transfer scam', 'money transfer scam',
+            'investment fraud', 'false pretense', 'false pretences', 'duped', 'conned',
+            'con artist', 'cheat', 'cheated', 'cheating', 'bribe', 'bribery',
+            'extort', 'extortion', 'blackmail', 'online fraud', 'internet fraud',
+            'fake document', 'fake currency', 'money doubling', 'yahoo yahoo',
+            'g-fraud', 'romance scam', 'bitcoin scam', 'crypto scam'
+        ],
+        'health': [
+            'sick', 'sickness', 'ill', 'illness', 'disease', 'infection', 'infected',
+            'fever', 'pain', 'hospital', 'doctor', 'medical emergency',
+            'heart attack', 'stroke', 'coma', 'unconscious', 'fainted', 'faint',
+            'fainting', 'collapsed', 'collapse', 'seizure', 'convulsion', 'convulsing',
+            'bleeding heavily', 'excessive bleeding', 'epidemic', 'outbreak', 'malaria',
+            'cholera', 'typhoid', 'covid', 'coronavirus', 'poison', 'poisoning',
+            'food poisoning', 'overdose', 'snake bite', 'dog bite', 'animal bite',
+            'allergy', 'allergic reaction', 'asthma attack', 'diabetic', 'hypertension',
+            'surgery needed', 'ambulance', 'clinic', 'nursing home', 'mental breakdown',
+            'suicide attempt', 'self harm', 'vomiting blood', 'difficulty breathing',
+            'not breathing', 'died', 'dead', 'death', 'corpse', 'body found'
+        ],
+        'vandalism': [
+            'vandal', 'vandalism', 'vandalize', 'vandalized', 'destroy', 'destroyed',
+            'destruction of property', 'graffiti', 'broken window', 'windows smashed',
+            'smash', 'smashed', 'property damage', 'deface', 'defaced', 'defacement',
+            'spray paint', 'scratched', 'ruined', 'sabotage', 'sabotaged',
+            'riot', 'rioting', 'rioters', 'trespassing', 'trespass', 'protesters destroying',
+            'street destroyed', 'road damaged', 'facilities destroyed', 'burnt property',
+            'deliberate damage', 'wanton destruction'
+        ],
+        'misplace': [
+            'lost', 'lose', 'misplace', 'misplaced', 'missing item', 'lost item',
+            'left behind', 'forgot', 'forgotten', 'can\'t find', 'cannot find',
+            'where is my', 'where is our', 'lost and found', 'mislay', 'mislaid',
+            'dropped my', 'left my', 'lost my', 'lost phone', 'lost wallet',
+            'lost bag', 'lost keys', 'lost document', 'lost passport', 'lost card',
+            'left in taxi', 'left on bus', 'left in vehicle', 'abandoned property',
+            'found a', 'someone lost', 'item found', 'misplaced item'
+        ],
+        'murder': [
+            'murder', 'killed', 'kill', 'killing', 'homicide',
+            'assassinated', 'assassination', 'slain', 'deadly attack',
+            'shot dead', 'shot', 'gunshot', 'gun attack',
+            'stabbed', 'stabbing', 'knife attack',
+            'beheaded', 'strangled', 'choked to death',
+            'poisoned', 'poisoning', 'burned alive', 'set on fire',
+            'lynched', 'mob killing', 'mob attack',
+            'domestic killing', 'domestic violence death',
+            'ritual killing', 'cult killing',
+            'found dead', 'body found', 'corpse found',
+            'death under suspicious circumstances',
+            'execution', 'executed', 'extra judicial killing',
+            'mass killing', 'multiple قتل', 'massacre',
+            'kidnapped and killed', 'abducted and killed',
+            'robbery killing', 'killed during robbery'
+]
+    };
+
+    function classifyByKeywords(text) {
+        if (!text || text.trim().length === 0) return null;
+        var lower = text.toLowerCase();
+        var scores = {};
+        var maxScore = 0;
+        var bestCategory = null;
+
+        Object.keys(categoryKeywords).forEach(function(category) {
+            var keywords = categoryKeywords[category];
+            var score = 0;
+            keywords.forEach(function(keyword) {
+                var escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                // Use word boundary for single words, flexible match for phrases
+                var pattern = keyword.indexOf(' ') !== -1
+                    ? new RegExp(escaped, 'i')
+                    : new RegExp('\\b' + escaped + '\\b', 'i');
+                if (pattern.test(lower)) {
+                    // Weight: multi-word phrases score higher
+                    score += keyword.split(' ').length * 2;
                 }
             });
-        }
-        
-        // If we have local categories and no API key, use them
-        if (!OPENAI_API_KEY || OPENAI_API_KEY === '') {
-            if (allLocalCategories.length > 0) {
-                var finalLocal = allLocalCategories.join(', ');
-                callback(null, finalLocal, 'local-all');
-            } else {
-                callback(null, 'other', 'other');
+            scores[category] = score;
+            if (score > maxScore) {
+                maxScore = score;
+                bestCategory = category;
             }
+        });
+
+        return maxScore > 0 ? bestCategory : null;
+    }
+
+    var categorizationTimer = null;
+    var lastCategorizedText = '';
+    var isClassifying = false;
+    
+    // ============================================
+    // Classification via Gemini AI API
+    // ============================================
+    function classify_with_gemini(text, callback) {
+        console.log('🔍 CLASSIFYING WITH GEMINI:', text.substring(0, 50));
+        
+        if (!text || text.trim().length === 0) {
+            callback(null);
             return;
         }
-        
+
         var categoryList = Object.keys(issueCategories).join(', ');
 
-    var prompt = 'You are an expert emergency report analyzer. Your task is to read the following text and IDENTIFY ALL incident categories that are present. ' +
-                    '\n\nANALYSIS PROCESS:' +
-                    '\n1. Read the ENTIRE text carefully and understand the FULL CONTEXT.' +
-                    '\n2. Identify ALL incidents or events being reported (not just the primary one).' +
-                    '\n3. Determine what TYPE(s) of emergency or incident these are.' +
-                    '\n4. Choose ALL SPECIFIC and ACCURATE category names that apply (use existing preferred categories when possible).' +
-                    '\n\nIMPORTANT RULES:' +
-                    '\n- If multiple incidents are described, return all applicable categories.' +
-                    '\n- Examples: "shooting + robbery" = return ["shooting", "robbery"]; "stabbing + kidnapping" = ["armed_attack", "kidnapping"]' +
-                    '\n- Protests, demonstrations, rallies, roadblocks with people protesting = "protest" (NOT road_incident or traffic_congestion)' +
-                    '\n- Traffic congestion, slow traffic, or heavy traffic = "traffic_congestion" (NOT road_accident)' +
-                    '\n- Road accident requires actual collision, crash, injury, or vehicle damage' +
-                    '\n- Suicide or self-inflicted death = "suicide"' +
-                    '\n- Murder, homicide or mentions of people dead = "homicide"' +
-                    '\n- Medical issues (heart attack, stroke, unconscious, bleeding) = "medical_emergency"' +
-                    '\n- Natural disasters (flood, storm, earthquake) = "natural_disaster"' +
-                    '\n- Building/structure collapse = "building_collapse"' +
-                    '\n- Missing person = "missing_person"' +
-                    '\n- Theft, robbery, burglary = "robbery"' +
-                    '\n- Fire = "fire_accident"' +
-                    '\n- Assault or physical attack = "assault"' +
-                    '\n- Shooting or gunfire = "shooting"' +
-                    '\n- Armed attack, stabbing, knife attack = "armed_attack"' +
-                    '\n- Kidnapping = "kidnapping"' +
-                    '\n- Vandalism = "vandalism"' +
-                    '\n- Cultism or gang violence = "cultism"' +
-                    '\n- Domestic violence = "domestic_violence"' +
-                    '\n- Sexual assault, rape = "sexual_assault"' +
-                    '\n- Child sexual abuse = "child_sexual_abuse"' +
-                    '\n\nPREFERRED CATEGORIES (use if text matches): ' + categoryList +
-                    '\n\nIf the text does NOT match any preferred category, create a NEW SPECIFIC category in snake_case format.' +
-                    '\nExamples of good new categories: cyber_crime, power_outage, gas_leak, water_shortage, noise_pollution, animal_attack, etc.' +
-                    '\n\nNEVER use generic categories like "emergency_report", "incident_report", or "reported_incident".' +
-                    '\nALWAYS choose the MOST SPECIFIC categories that best describe what happened.' +
-                    '\nThink carefully about what the text is REALLY describing, not just individual words.' +
-                    '\n\nText to analyze: "' + text + '"' +
-                    '\n\nRespond with ONLY the categories in snake_case format (comma-separated if multiple), nothing else.';
-
-        // Use CORS proxy if needed (OpenAI API may have CORS restrictions)
-        var apiUrl = 'https://api.openai.com/v1/chat/completions';
-        // Alternative: Use a CORS proxy if direct calls fail
-        // var apiUrl = 'https://corsproxy.io/?https://api.openai.com/v1/chat/completions';
+        // Explicit, structured prompt that forces a strict single-word output
+        var prompt = [
+            'You are a strict one-word text classifier for a Nigerian emergency reporting system.',
+            '',
+            'CATEGORIES: ' + categoryList,
+            '',
+            'RULES:',
+            '- Output EXACTLY one word from the categories list above.',
+            '- No punctuation. No explanation. No extra words. Just the category.',
+            '- fire = burning, flames, smoke, explosion, arson',
+            '- robbery = theft, stolen items, armed robbers, mugging, burglary, looting',
+            '- kidnapping = abduction, taken by force, held hostage, missing person taken',
+            '- accident = crash, fall, injury, collision, electrocution, drowning',
+            '- fraud = scam, deception, fake, forgery, 419, swindle, impersonation',
+            '- health = sickness, disease, medical emergency, poison, death, convulsion',
+            '- vandalism = property destruction, graffiti, damage to infrastructure',
+            '- misplace = lost item, forgotten, cannot find something',
+            '- murder = killed, kill, killing, homicide, assassinated, slain, shot, shot dead',
+            '',
+            'TEXT: "' + text + '"',
+            '',
+            'ONE WORD ANSWER:'
+        ].join('\n');
         
-    // Prefer machine-parseable JSON output from the model to reduce misinterpretation
-    var jsonPrompt = prompt + "\n\nIMPORTANT: Respond with a single valid JSON object ONLY (no additional text). The JSON must have these keys: \n{\n  \"categories\": string,     // comma-separated list of categories in snake_case (e.g., 'shooting, homicide')\n  \"confidence\": number,     // model confidence 0.0-1.0\n  \"reason\": string          // short plain-language explanation of the incidents\n}\n\nRespond ONLY with the JSON object and nothing else.\n";
+        var requestBody = {
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: 0,
+                maxOutputTokens: 10,
+                stopSequences: ['\n', '.', ',', '!', '?', ' ']
+            }
+        };
 
-        $.ajax({
-            url: apiUrl,
+        console.log('📤 Sending Gemini request...');
+        
+        fetch(GEMINI_API_URL + '?key=' + GEMINI_API_KEY, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + OPENAI_API_KEY
-            },
-                data: JSON.stringify({
-                model: 'gpt-3.5-turbo',
-                messages: [
-                    {
-                        role: 'system',
-                        content: 'You are an expert Nigerian emergency report categorizer with deep understanding of incident types in Nigeria. Your goal is to identify ALL incident categories that are present in the reported text. If multiple incidents are described, return all applicable categories. Read the ENTIRE text, understand the FULL CONTEXT, identify ALL incidents, and choose ALL MOST SPECIFIC categories. Valid categories include: robbery, road_accident, fire_accident, cultism, assault, kidnapping, vandalism, domestic_violence, sexual_assault, child_sexual_abuse, armed_attack, shooting, homicide, suicide, terrorism, banditry, communal_conflict, political_violence, police_brutality, cybercrime, ritualism, human_trafficking, protest, traffic_congestion, medical_emergency, natural_disaster, building_collapse, drug_related, missing_person, bomb_threat, fight, public_disturbance, threat, suspicious_activity. Examples: "shooting in market and people died" = ["shooting", "homicide"]; "herdsmen killed farmers" = ["homicide", "armed_attack", "banditry"]; "boko haram bombing" = ["terrorism", "bomb_threat"]. NEVER use generic categories. ALWAYS be specific and accurate. Consider the Nigerian context.\nIMPORTANT: return a single valid JSON object with keys categories (comma-separated string), confidence (0.0-1.0), and reason. Do not include any other text.'
-                    },
-                    {
-                        role: 'user',
-                        content: jsonPrompt
-                    }
-                ],
-                max_tokens: 100,
-                temperature: 0.2
-            }),
-            timeout: 10000,
-            success: function(response) {
-                if (response && response.choices && response.choices.length > 0) {
-                    var raw = response.choices[0].message.content.trim();
-                    var parsed = null;
-                    try {
-                        // Some models may include stray text; try to extract JSON from the reply
-                        var firstBrace = raw.indexOf('{');
-                        var lastBrace = raw.lastIndexOf('}');
-                        if (firstBrace !== -1 && lastBrace !== -1) {
-                            var jsonText = raw.substring(firstBrace, lastBrace + 1);
-                            parsed = JSON.parse(jsonText);
-                        } else {
-                            parsed = JSON.parse(raw);
-                        }
-                    } catch (e) {
-                        console.warn('OpenAI returned non-JSON or malformed JSON:', raw);
-                    }
-
-                    if (CATEGORY_DEBUG) {
-                        console.log('--- Categorizer Debug START ---');
-                        console.log('AI raw response:', raw);
-                        console.log('AI parsed JSON:', parsed);
-                    }
-
-                    var categoriesArray = [];
-                    var confidence = 0.0;
-                    var reason = '';
-
-                    // Parse categories field (supports array or comma-separated string)
-                    if (parsed) {
-                        confidence = parseFloat(parsed.confidence) || 0.0;
-                        reason = String(parsed.reason || '');
-                        if (parsed.categories) {
-                            if (Array.isArray(parsed.categories)) {
-                                categoriesArray = parsed.categories.map(function(c){ return String(c).toLowerCase().trim(); });
-                            } else {
-                                // Could be a comma-separated string
-                                categoriesArray = String(parsed.categories).split(/,|\[|\]|\||;/).map(function(c){ return String(c).toLowerCase().replace(/[^a-z0-9_\s-]/g,'').trim(); }).filter(Boolean);
-                            }
-                        }
-                    }
-
-                    // Post-processing safety checks: if the model output is missing or low-confidence, fallback to local heuristics
-                    var lowerText = text.toLowerCase();
-                    var highRiskKeywords = /\b(kill|murder|suicide|rape|raped|molest|molested|defile|defiled|child|boy|girl|baby|stab|shoot|gun|weapon)\b/i;
-                    if (!categoriesArray || categoriesArray.length === 0 || confidence < 0.4) {
-                        // If high-risk keywords exist, use local heuristics which are conservative
-                        var local = null;
-                        if (highRiskKeywords.test(lowerText)) {
-                            local = categorizeByKeywords(text) || deriveCategoryFromText(text);
-                        } else {
-                            // Non high-risk: prefer derived categories when AI is unsure
-                            local = deriveCategoryFromText(text);
-                        }
-
-                        if (local) {
-                            // local may be comma-separated; normalize to array
-                            if (typeof local === 'string' && local.indexOf(',') !== -1) {
-                                categoriesArray = local.split(',').map(function(c){ return String(c).toLowerCase().trim(); }).filter(Boolean);
-                            } else {
-                                categoriesArray = [String(local).toLowerCase().trim()];
-                            }
-                            if (CATEGORY_DEBUG) console.log('Local fallback used (low AI confidence or missing):', local);
-                        }
-                    }
-
-                    // Merge in local heuristics to ensure the AI doesn't miss categories (union of AI + local)
-                    try {
-                        // Always gather both keyword-based and derived categories, then union them with AI results.
-                        var localRaw = categorizeByKeywords(text) || '';
-                        var localCandidates = [];
-                        if (localRaw) {
-                            if (Array.isArray(localRaw)) {
-                                localCandidates = localRaw.slice();
-                            } else {
-                                localCandidates = String(localRaw).split(/,|;|\|/).map(function(c){ return c.trim(); }).filter(Boolean);
-                            }
-                        }
-
-                        // Also include derived categories (more advanced patterns like 'homicide' from 'dead')
-                        var derivedLocal = deriveCategoryFromText(text);
-                        if (derivedLocal) {
-                            var derivedList = Array.isArray(derivedLocal) ? derivedLocal : String(derivedLocal).split(/,|;|\|/).map(function(c){ return c.trim(); }).filter(Boolean);
-                            derivedList.forEach(function(c){
-                                if (c && localCandidates.indexOf(c) === -1) {
-                                    localCandidates.push(c);
-                                }
-                            });
-                        }
-
-                        if (CATEGORY_DEBUG) console.log('Local keyword candidates before merge:', localCandidates, 'AI categories before merge:', categoriesArray);
-                        localCandidates.forEach(function(c) {
-                            var norm = String(c).toLowerCase().replace(/[^a-z0-9_\s-]/g,'').trim().replace(/\s+/g,'_');
-                            if (norm && categoriesArray.indexOf(norm) === -1) {
-                                categoriesArray.push(norm);
-                            }
-                        });
-                        if (CATEGORY_DEBUG) console.log('Categories after merging AI + local:', categoriesArray);
-                    } catch (e) {
-                        // If local heuristics throw for any reason, ignore and continue with AI categories
-                        console.warn('Error merging local heuristics:', e);
-                    }
-
-                    // Remove generic placeholders and replace them using derived heuristics
-                    categoriesArray = categoriesArray.map(function(c){ return c.replace(/\s+/g,'_'); }).filter(Boolean);
-                    categoriesArray = categoriesArray.filter(function(c){ return c !== 'emergency_report' && c !== 'incident_report' && c !== 'reported_incident' && c !== 'other'; });
-
-                    if (categoriesArray.length === 0) {
-                        var derivedCategory = deriveCategoryFromText(text);
-                        categoriesArray = [derivedCategory];
-                    }
-
-                    // Deduplicate while preserving order
-                    var seen = {};
-                    var finalCategories = [];
-                    categoriesArray.forEach(function(c){
-                        if (!c) return;
-                        var key = c.toLowerCase().trim();
-                        if (!seen[key]) {
-                            seen[key] = true;
-                            finalCategories.push(key);
-                        }
-                    });
-
-                    if (CATEGORY_DEBUG) {
-                        console.log('Final deduplicated categories:', finalCategories);
-                        console.log('--- Categorizer Debug END ---');
-                    }
-
-                    // Prepare final output: if any finalCategories match known issueCategories, prefer those keys; otherwise keep suggested names
-                    lastCategorizedText = text.trim();
-                    var joined = finalCategories.join(', ');
-                    // If single known category, pass as first param (legacy consumers). For multi, pass null for first param and categories as second.
-                    if (finalCategories.length === 1) {
-                        var single = finalCategories[0];
-                        if (issueCategories[single]) {
-                            callback(single, null, reason);
-                        } else {
-                            callback(single, single, reason);
-                        }
-                    } else {
-                        // Multiple categories: pass null as primary and provide comma-separated list as suggested categories
-                        callback(null, joined, reason);
-                    }
-                } else {
-                    // Fallback to intelligent text analysis
-                    var fallbackCategory = categorizeByKeywords(text);
-                    if (fallbackCategory) {
-                        callback(fallbackCategory, null, 'fallback-keyword');
-                    } else {
-                        var derivedCategory = deriveCategoryFromText(text);
-                        callback(derivedCategory, derivedCategory, 'fallback-derived');
-                    }
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('OpenAI API Error:', status, error, xhr.responseText);
-                // On API error, use merged local categories like we do when no API key
-                if (allLocalCategories.length > 0) {
-                    var errorFinalLocal = allLocalCategories.join(', ');
-                    callback(null, errorFinalLocal, 'error-fallback-local');
-                } else {
-                    callback(null, 'other', 'error-other');
-                }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        })
+        .then(function(response) {
+            console.log('📥 HTTP Status:', response.status, response.statusText);
+            if (!response.ok) {
+                return response.text().then(function(errorText) {
+                    console.error('❌ HTTP ERROR:', response.status, errorText);
+                    callback(null);
+                    throw new Error('HTTP ' + response.status);
+                });
             }
-        });
-    }
-    
-    // Intelligent function to derive the best category from text
-    function deriveCategoryFromText(text) {
-        // Autocorrect misspellings before analysis
-        text = autocorrectText(text);
-        var lowerText = text.toLowerCase().trim();
-        var words = lowerText.split(/\s+/);
-        
-        // Priority-based pattern matching - check most specific patterns first
-        var patterns = [
-            // Suicide patterns
-            { pattern: /\b(committed\s+suicide|killed\s+(himself|herself)|took\s+(his|her)\s+life|hanging|hanged\s+himself|hanged\s+herself)\b/i, category: 'suicide' },
-            { pattern: /\bsuicide\b/i, category: 'suicide' },
-            
-            // Homicide/Murder patterns (including death/fatality indicators)
-            { pattern: /\b(murdered|killed\s+(a|the|someone)|homicide|assassination|dead|death|fatality|fatalities)\b/i, category: 'homicide' },
-            { pattern: /\bmurder\b/i, category: 'homicide' },
-            
-            // Protest/Demonstration patterns - check before traffic patterns
-            { pattern: /\b(protest|protesting|protesters|demonstration|demonstrating|demonstrators|rally|rallies|march|marching|roadblock|road\s+block|blocking\s+road|blocked\s+road|people\s+out\s+protesting|people\s+protesting|crowd\s+protesting)\b/i, category: 'protest' },
-            { pattern: /\b(roadblock|road\s+block|blocking\s+the\s+road|blocked\s+the\s+road)\b/i, category: 'protest' },
-            
-            // Traffic patterns - must distinguish congestion from accident
-            { pattern: /\b(traffic\s+(slow|heavy|congestion|jam)|slow\s+traffic|heavy\s+traffic|traffic\s+congestion)\b/i, category: 'traffic_congestion' },
-            { pattern: /\b(road\s+accident|car\s+crash|vehicle\s+crash|collision|vehicles?\s+collided|car\s+crashed)\b/i, category: 'road_accident' },
-            { pattern: /\b(accident|crash|crashed)\b/i, category: 'road_accident' },
-            
-            // Medical emergency patterns
-            { pattern: /\b(heart\s+attack|stroke|seizure|unconscious|passed\s+out|fainted|bleeding|severe\s+pain|chest\s+pain|can't\s+breathe|choking|allergic\s+reaction)\b/i, category: 'medical_emergency' },
-            { pattern: /\b(medical\s+emergency|hospital|ambulance|injury|injured)\b/i, category: 'medical_emergency' },
-            
-            // Fire patterns
-            { pattern: /\b(fire|burning|burned|burnt|flame|flames|smoke|blaze|explosion|exploded|inferno|arson)\b/i, category: 'fire_accident' },
-            
-            // Robbery/Theft patterns
-            { pattern: /\b(robbery|robbed|stolen|theft|thief|thieves|steal|stealing|burglary|burglar|mugging|mugged|snatch|snatched|pickpocket|armed\s+robbery|break\s+in|break-in|stole|loot|looting|forcefully\s+collect|collect\s+money|collect\s+cash|extort|extortion)\b/i, category: 'robbery' },
+            return response.json();
+        })
+        .then(function(data) {
+            console.log('📦 Raw Gemini Response:', JSON.stringify(data));
 
-            // Fraud patterns (offline/in-person fraud, scams)
-            { pattern: /\b(scam|scammed|physically\s+scammed|defraud|defrauded|con\b|conman|conmen|rip\s+off|ripped\s+off|duped|tricked|fraud|fraudulent)\b/i, category: 'fraud' },
-            
-            // Assault patterns
-            { pattern: /\b(assault|attacked|beating|beaten|battery|physical\s+attack|violence|violent|harm|harmed|hurt|hurting)\b/i, category: 'assault' },
-            
-            // Kidnapping patterns
-            { pattern: /\b(kidnap|kidnapping|kidnapped|abduct|abducted|abduction|hostage|hostages|ransom|taken)\b/i, category: 'kidnapping' },
-            
-            // Missing person patterns
-            { pattern: /\b(missing\s+(person|child|people)|disappeared|lost|can't\s+find|haven't\s+seen|last\s+seen)\b/i, category: 'missing_person' },
-            
-            // Vandalism patterns
-            { pattern: /\b(vandalism|vandalize|vandalized|destruction|destroyed|damage|damaged|graffiti|defaced|property\s+damage)\b/i, category: 'vandalism' },
-            
-            // Domestic violence patterns
-            { pattern: /\b(domestic\s+violence|domestic\s+abuse|spouse|partner|wife|husband|family\s+violence|home\s+violence|intimate\s+partner)\b/i, category: 'domestic_violence' },
-            
-            // Sexual assault patterns (handle tense/verb variants like "forcefully sleeps", "forcefully slept")
-            { pattern: /\b(rape|raped|sexual\s+assault|sexually\s+assaulted|forced\s+to\s+have\s+sex|force(?:d|fully)?\s+(?:to\s+have\s+sex|sleep(?:s|ing|ed)?\s+with)|molest|molested|molestation|sexual\s+abuse|sex\s+abuse|defile|defiled)\b/i, category: 'sexual_assault' },
-            
-            // Cultism patterns
-            { pattern: /\b(cult|cultism|cultist|cultists|gang|gangs|gangster|gangsters|secret\s+society|fraternity)\b/i, category: 'cultism' },
-            
-            // Natural disaster patterns
-            { pattern: /\b(flood|flooding|flooded|storm|hurricane|tornado|earthquake|landslide|mudslide|tsunami|wildfire|drought|avalanche)\b/i, category: 'natural_disaster' },
-            
-            // Building collapse patterns
-            { pattern: /\b(building\s+collapse|building\s+collapsed|structure\s+collapse|roof\s+collapse|wall\s+collapse|building\s+fell|structure\s+fell|construction\s+accident)\b/i, category: 'building_collapse' },
-            
-            // Drug related patterns
-            { pattern: /\b(drug|drugs|overdose|overdosed|drug\s+dealer|drug\s+dealing|substance\s+abuse|narcotics|illegal\s+drugs|drug\s+trafficking)\b/i, category: 'drug_related' },
-            
-            // Shooting/armed attack patterns - check before generic weapon
-            { pattern: /\b(shooting|shoot|shot|gunfire|gun\s+fire|firing|shooter)\b/i, category: 'shooting' },
-            { pattern: /\b(armed|weapon|gun|knife|pistol|rifle|machete|stab|stabbing|stabbed|blade|herdsmen|herders|communal|ethnic|tribal|militia)\b/i, category: 'armed_attack' },
-            
-            // Explosion/Bomb patterns
-            { pattern: /\b(bomb|explosion|exploded|explosive|bomb\s+threat)\b/i, category: 'bomb_threat' },
-            
-            // Fight patterns
-            { pattern: /\b(fight|fighting|fought|brawl|brawling|conflict|confrontation)\b/i, category: 'fight' },
-            
-            // Public disturbance patterns
-            { pattern: /\b(public\s+disturbance|disturbance|noise|noise\s+disturbance|trespass|trespassing)\b/i, category: 'public_disturbance' },
-            
-            // Threat patterns
-            { pattern: /\b(threat|threatening|danger|dangerous|risk)\b/i, category: 'threat' },
-            
-            // Suspicious activity patterns
-            { pattern: /\b(suspicious|suspected|suspicion)\b/i, category: 'suspicious_activity' },
-            
-            // Terrorism/Insurgency patterns - Nigerian security threats
-            { pattern: /\b(terrorism|terrorist|boko\s+haram|isis|iswap|al-qaeda|al-shabaab|insurgency|insurgent)\b/i, category: 'terrorism' },
-            { pattern: /\b(bombing|bomb\s+attack|ied|improvised\s+explosive|explosive\s+device|terror\s+attack)\b/i, category: 'terrorism' },
-            
-            // Banditry patterns - organized armed groups
-            { pattern: /\b(bandit|banditry|rustling|cattle\s+rustling|highway\s+robbery|kidnappers|mass\s+abduction|convoy\s+attack)\b/i, category: 'banditry' },
-            
-            // Communal/Ethnic conflict patterns
-            { pattern: /\b(communal\s+clash|ethnic\s+clash|border\s+dispute|land\s+dispute|chieftaincy|ethno-?religious|tribal\s+war|herdsmen\s+farmers)\b/i, category: 'communal_conflict' },
-            
-            // Political violence patterns
-            { pattern: /\b(election\s+violence|political\s+violence|political\s+assassination|electoral|campaign\s+violence|ballot\s+snatching)\b/i, category: 'political_violence' },
-            
-            // Police brutality patterns
-            { pattern: /\b(police\s+brutality|extrajudicial\s+killing|police\s+shooting|police\s+abuse|sars|death\s+in\s+custody|police\s+corruption|police\s+extortion|forcefully\s+collect|police\s+demand|bribery|graft)\b/i, category: 'police_brutality' },
-            
-            // Cybercrime patterns
-            { pattern: /\b(cybercrime|internet\s+fraud|phishing|ransomware|malware|hacking|identity\s+theft|online\s+fraud|advance\s+fee|419|romance\s+scam|credit\s+card\s+fraud|scammer|yahoo\s+boys|yahoo\s+girl|fraudulent)\b/i, category: 'cybercrime' },
-            
-            // Ritualism patterns
-            { pattern: /\b(ritual\s+killing|ritualism|occult|voodoo|human\s+sacrifice|blood\s+ritual|cult\s+ritual)\b/i, category: 'ritualism' },
-            
-            // Human trafficking patterns
-            { pattern: /\b(human\s+trafficking|sex\s+trafficking|labor\s+trafficking|forced\s+labor|child\s+labor|slave\s+trade)\b/i, category: 'human_trafficking' }
-        ];
-
-        // Check patterns and collect ALL matches (for multi-category support)
-        var matchedCategories = [];
-        var matchedPatternNames = []; // Track which patterns matched
-        for (var i = 0; i < patterns.length; i++) {
-            if (patterns[i].pattern.test(lowerText)) {
-                if (!matchedCategories.includes(patterns[i].category)) {
-                    matchedCategories.push(patterns[i].category);
-                    matchedPatternNames.push('Pattern ' + i + ': ' + patterns[i].category);
-                }
+            if (data.error) {
+                console.error('❌ API Error:', data.error);
+                callback(null);
+                return;
             }
-        }
-        
-        // High-priority sexual assault detection (add to matches, don't return early)
-        if (/\b(rape|raped|sexual assault|sexually assaulted|forced to have sex|forcefully slept with|molest|molested|molestation|sexual abuse|sex abuse|defile|defiled)\b/i.test(lowerText)) {
-            var ageMatch = lowerText.match(/(\b(\d{1,2})\s*(years|yrs|year|y|months|mos)\b)/i);
-            if (ageMatch && parseInt(ageMatch[2], 10) <= 16) {
-                if (!matchedCategories.includes('child_sexual_abuse')) {
-                    matchedCategories.push('child_sexual_abuse');
-                }
-            } else {
-                if (!matchedCategories.includes('sexual_assault')) {
-                    matchedCategories.push('sexual_assault');
-                }
-            }
-        }
 
-        // Post-check: detect attempts or threats mentioning someone (e.g., "trying to kill himself", "trying to kill someone")
-        // Stronger suicidal attempt patterns
-        var suicideAttemptPatterns = [
-            /\b(trying\s+to\s+kill\s+(himself|herself|themselves|him|her))\b/i,
-            /\b(attempted\s+suicide|attempting\s+suicide|attempts?\s+suicide)\b/i,
-            /\b(trying\s+to\s+kill\s+him|trying\s+to\s+kill\s+her)\b/i,
-            /\b(kill\s+himself|kill\s+herself|kill\s+themselves|kill\s+myself|kill\s+yourself)\b/i
-        ];
-        for (var s = 0; s < suicideAttemptPatterns.length; s++) {
-            if (suicideAttemptPatterns[s].test(lowerText)) {
-                if (!matchedCategories.includes('suicide')) {
-                    matchedCategories.push('suicide');
-                }
-            }
-        }
-
-        // Stronger homicide/threat patterns
-        var homicidePatterns = [
-            /\b(trying\s+to\s+kill\b|trying\s+to\s+murder\b|planning\s+to\s+kill\b|threaten(ed)?\s+to\s+kill)\b/i,
-            /\b(kill\s+him|kill\s+her|kill\s+himself|kill\s+herself|murdered|murder)\b/i
-        ];
-        for (var h = 0; h < homicidePatterns.length; h++) {
-            if (homicidePatterns[h].test(lowerText)) {
-                // Differentiate self-harm from homicide — some patterns above overlap
-                if (/\b(himself|herself|myself|yourself|themselves)\b/i.test(lowerText)) {
-                    if (!matchedCategories.includes('suicide')) {
-                        matchedCategories.push('suicide');
-                    }
-                } else {
-                    if (!matchedCategories.includes('homicide')) {
-                        matchedCategories.push('homicide');
-                    }
-                }
-            }
-        }
-
-        
-        // If we found multiple matches, apply some contextual rules then return them comma-separated
-        if (matchedCategories.length > 0) {
-            // Contextual rule: attacks on places of worship with explosive/bomb keywords likely indicate terrorism
+            var responseText = '';
             try {
-                var lower = lowerText;
-                var placeOfWorship = /\b(church|mosque|temple|synagogue|place of worship|worship)\b/i.test(lower);
-                var deathWords = /\b(kill|killed|killed\b|murdered|died|dead|fatality|fatalities|several\s+killed|many\s+killed|many\s+dead)\b/i.test(lower);
-
-                if (placeOfWorship && (matchedCategories.indexOf('bomb_threat') !== -1 || matchedCategories.indexOf('terrorism') !== -1 || /\bbomb|explosion|bombed|bombing\b/i.test(lower))) {
-                    if (matchedCategories.indexOf('terrorism') === -1) matchedCategories.push('terrorism');
-                }
-
-                // If there's an explosion/bomb and mention of death/injuries, add homicide
-                if ((matchedCategories.indexOf('bomb_threat') !== -1 || /\bbomb|explosion|bombed|bombing\b/i.test(lower)) && deathWords) {
-                    if (matchedCategories.indexOf('homicide') === -1) matchedCategories.push('homicide');
+                if (data.candidates && data.candidates[0] &&
+                    data.candidates[0].content &&
+                    data.candidates[0].content.parts &&
+                    data.candidates[0].content.parts[0]) {
+                    responseText = data.candidates[0].content.parts[0].text;
+                    console.log('✓ Gemini raw text:', JSON.stringify(responseText));
+                } else {
+                    console.error('❌ Unexpected Gemini response structure:', JSON.stringify(data));
                 }
             } catch (e) {
-                // ignore contextual rule failures
+                console.error('❌ Parse error:', e.message);
             }
 
-            if (CATEGORY_DEBUG) {
-                console.log('=== deriveCategoryFromText DEBUG (Pattern Match) ===');
-                console.log('Input text:', text);
-                console.log('Matched patterns:', matchedPatternNames);
-                console.log('Matched categories:', matchedCategories);
-            }
-            return matchedCategories.join(', ');
-        }
-        
-        // Advanced pattern extraction for complex sentences
-        var advancedPatterns = [
-            // "a man just committed X" or "X just happened"
-            /(?:a|an|the)\s+(\w+)\s+(?:just|recently|has|have|had)?\s*(?:committed|did|happened|occurred|going\s+on)/i,
-            // "there is X" or "there was X"
-            /(?:there\s+is|there\s+are|there\s+was|there\s+were)\s+(?:a|an|the)?\s*(\w+)/i,
-            // "I saw X" or "we noticed X"
-            /(?:i|we|they)\s+(?:saw|see|seen|noticed|witnessed|reported)\s+(?:a|an|the)?\s*(\w+)/i,
-            // "X in my area/street"
-            /(\w+)\s+(?:in|on|at)\s+(?:my|the|this|that)\s+(?:area|street|road|neighborhood|place)/i
-        ];
-        
-        for (var p = 0; p < advancedPatterns.length; p++) {
-            var match = lowerText.match(advancedPatterns[p]);
-            if (match && match[1]) {
-                var incidentWord = match[1].toLowerCase();
-                // Filter out common words and check if it's meaningful
-                if (incidentWord.length > 3 && 
-                    !['this', 'that', 'what', 'when', 'where', 'which', 'there', 'here', 'some', 'many', 'most', 'just', 'very', 'really'].includes(incidentWord)) {
-                    // Check if it's already a known category word
-                    for (var j = 0; j < patterns.length; j++) {
-                        if (lowerText.indexOf(patterns[j].category.replace('_', ' ')) !== -1 || 
-                            lowerText.indexOf(patterns[j].category) !== -1) {
-                            return patterns[j].category;
-                        }
-                    }
-                    // If incidentWord looks like a person's name (capitalized in original text or short), avoid returning 'name_incident'
-                    var originalMatch = text.match(new RegExp('\\b' + match[1] + '\\b'));
-                    var looksLikeName = false;
-                    if (originalMatch) {
-                        var origToken = originalMatch[0];
-                        // crude check: contains a capital letter in original text or is a single proper noun
-                        if (/[A-Z]/.test(origToken.charAt(0))) {
-                            looksLikeName = true;
-                        }
-                    }
-
-                    if (looksLikeName) {
-                        // Look for verbs indicating self-harm or violence to decide category
-                        if (/\b(kill|kill(ed)?|murder|murdered|suicide|attempt(ed)?|trying\s+to\s+kill|trying\s+to\s+murder|attack|stab|shoot)\b/i.test(lowerText)) {
-                            // prioritize suicide if self-harm pronouns present
-                            if (/\b(himself|herself|myself|yourself|themselves)\b/i.test(lowerText)) {
-                                return 'suicide';
-                            }
-                            // otherwise treat as homicide/threat
-                            return 'homicide';
-                        }
-
-                        // If no violence/self-harm verbs, avoid fabricating a 'name_incident' category
-                        // Fall through to other heuristics
-                    }
-
-                    // Generate meaningful category combining verb + noun: e.g., "stabbing_emergency", "shooting_attack"
-                    var actionMatch = lowerText.match(/\b(stabbing|stabbed|shooting|shot|hitting|hit|burning|burned|attacking|attacked|robbing|robbed|stealing|stolen|fighting|fought)\b/i);
-                    if (actionMatch) {
-                        return actionMatch[1].toLowerCase() + '_' + incidentWord;
-                    }
-
-                    return incidentWord + '_emergency';
-                }
-            }
-        }
-        
-        // Extract meaningful nouns/verbs (filter out stop words)
-        var stopWords = ['there', 'this', 'that', 'what', 'when', 'where', 'which', 'about', 
-                         'after', 'before', 'during', 'their', 'there', 'these', 'those',
-                         'could', 'would', 'should', 'might', 'may', 'must', 'have', 'has',
-                         'been', 'being', 'were', 'was', 'are', 'is', 'am', 'just', 'very',
-                         'really', 'quite', 'some', 'many', 'most', 'more', 'much', 'very',
-                         'also', 'still', 'even', 'only', 'just', 'now', 'then', 'here'];
-        
-        var importantWords = words.filter(function(word) {
-            word = word.replace(/[^a-z]/g, '');
-            return word.length > 4 && !stopWords.includes(word);
-        });
-        
-        if (importantWords.length > 0) {
-            // Prioritize action words (verbs) over nouns
-            var actionWords = ['happened', 'occurred', 'committed', 'reported', 'witnessed', 
-                              'noticed', 'seen', 'going', 'taking', 'causing', 'creating'];
-            
-            for (var a = 0; a < importantWords.length; a++) {
-                if (actionWords.includes(importantWords[a])) {
-                    // Look for the noun before or after the action word
-                    if (a > 0) {
-                        var categoryWord = importantWords[a - 1].replace(/[^a-z]/g, '');
-                        if (categoryWord.length > 3) {
-                            // If categoryWord is generic like 'block' or 'road', decide between protest and traffic
-                            if (/\b(block|road|roadblock|blocking|blocked)\b/i.test(categoryWord)) {
-                                // If text mentions people/protest keywords, use protest
-                                if (/\b(people|protest|protesting|demonstration|crowd|rally|march)\b/i.test(lowerText)) {
-                                    return 'protest';
-                                }
-                                // If text mentions traffic-related words, use traffic_congestion
-                                if (/\b(traffic|congestion|heavy|jam|slow)\b/i.test(lowerText)) {
-                                    return 'traffic_congestion';
-                                }
-                                // Default to protest because 'blocking the road' often implies protest
-                                return 'protest';
-                            }
-
-                            // Generate meaningful category from action + noun: e.g., "stabbing_attack", "vehicle_accident"
-                            var actionWord = importantWords[a].replace(/[^a-z]/g, '');
-                            return actionWord + '_' + categoryWord;
-                        }
-                    }
-                }
-            }
-            
-            // Use the most significant word (usually first meaningful word)
-            var categoryWord = importantWords[0].replace(/[^a-z]/g, '');
-            if (categoryWord.length > 3) {
-                // Handle generic words like 'block' specially
-                if (/\b(block|road|roadblock|blocking|blocked)\b/i.test(categoryWord)) {
-                    if (/\b(people|protest|protesting|demonstration|crowd|rally|march)\b/i.test(lowerText)) {
-                        return 'protest';
-                    }
-                    if (/\b(traffic|congestion|heavy|jam|slow)\b/i.test(lowerText)) {
-                        return 'traffic_congestion';
-                    }
-                    return 'protest';
-                }
-
-                // Look for nearby verbs to create descriptive category
-                var nearbyVerbs = /\b(stabbing|stabbed|shooting|shot|hitting|hit|burning|burned|attacking|attacked|robbing|robbed|stealing|stolen|fighting|fought)\b/i.exec(lowerText);
-                if (nearbyVerbs) {
-                    return nearbyVerbs[1].toLowerCase() + '_' + categoryWord;
-                }
-
-                // Create category from meaningful word + context clues
-                return categoryWord + '_emergency';
-            }
-        }
-        
-        // Last resort - extract meaningful action-based category from text
-        var lastResortMatch = lowerText.match(/\b(stabbing|shooting|hitting|burning|attacking|robbery|theft|assault|threat|emergency|danger|crisis)\b/i);
-        if (lastResortMatch) {
-            return lastResortMatch[1].toLowerCase() + '_emergency';
-        }
-        
-        // Final fallback - extract first meaningful descriptive word
-        for (var w = 0; w < words.length; w++) {
-            var word = words[w].replace(/[^a-z]/g, '');
-            if (word.length > 4 && !stopWords.includes(word)) {
-                return word + '_emergency';
-            }
-        }
-        
-        // Should never reach here, but provide a meaningful fallback
-        return 'emergency_report';
-    }
-    
-    // Fallback keyword-based categorization - now collects MULTIPLE categories
-    function categorizeByKeywords(text) {
-        // Autocorrect misspellings before keyword matching
-        text = autocorrectText(text);
-        var lowerText = text.toLowerCase();
-        var matchedCategories = [];
-        
-        // Robbery keywords - must indicate actual theft/robbery
-        if (/\b(robbery|rob|robbed|stolen|theft|thief|thieves|steal|stealing|burglary|burglar|mugging|mugged|snatch|snatched|pickpocket|armed robbery|break in|break-in|stole|loot|looting|forcefully\s+collect|collect\s+money|collect\s+cash|extort|extortion)\b/i.test(lowerText)) {
-            matchedCategories.push('robbery');
-        }
-        
-        // Road accident keywords - must indicate actual accident/crash, not just traffic
-        // Require accident-related words, not just traffic/road words
-        if (/\b(accident|crash|crashed|collision|collided|hit by|hit a|hitting a|hitting the|vehicle crash|car crash|truck crash|bus crash|motorcycle crash|bike crash|road accident|highway accident|injured in|injury from|fatal accident|casualty|casualties|ambulance|wreck|wrecked|overturned|overturn|vehicles collided|cars collided|collision between)\b/i.test(lowerText)) {
-            matchedCategories.push('road_accident');
-        }
-        
-        // Fire accident keywords
-        if (/\b(fire|burning|burned|burnt|flame|flames|smoke|smoking|blaze|blazing|explosion|explode|exploded|burn|inferno|arson|ignite|ignited|combustion|firefighter|fire fighter|fire department)\b/i.test(lowerText)) {
-            matchedCategories.push('fire_accident');
-        }
-        
-        // Cultism keywords
-        if (/\b(cult|cultism|cultist|cultists|gang|gangs|gangster|gangsters|violence|violent|attack|attacked|assault|assaulted|fight|fighting|fought|conflict|confrontation|rival|rivals|secret society|fraternity)\b/i.test(lowerText)) {
-            matchedCategories.push('cultism');
-        }
-        
-        // Assault keywords
-        if (/\b(assault|attacked|beating|beaten|battery|physical attack|violence|violent|harm|harmed|hurt|hurting)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('assault')) {
-                matchedCategories.push('assault');
-            }
-        }
-        
-        // Kidnapping keywords
-        if (/\b(kidnap|kidnapping|kidnapped|abduct|abducted|abduction|hostage|hostages|ransom|taken|missing person)\b/i.test(lowerText)) {
-            matchedCategories.push('kidnapping');
-        }
-        
-        // Vandalism keywords
-        if (/\b(vandalism|vandalize|vandalized|destruction|destroyed|damage|damaged|graffiti|defaced|property damage)\b/i.test(lowerText)) {
-            matchedCategories.push('vandalism');
-        }
-        
-        // Domestic violence keywords
-        if (/\b(domestic violence|domestic abuse|spouse|partner|wife|husband|family violence|home violence|intimate partner)\b/i.test(lowerText)) {
-            matchedCategories.push('domestic_violence');
-        }
-        
-        // Suicide keywords
-        if (/\b(suicide|suicidal|killed himself|killed herself|took his life|took her life|committed suicide|self harm|self-harm|hanging|hanged|overdose|overdosed|jumped|jumping)\b/i.test(lowerText)) {
-            matchedCategories.push('suicide');
-        }
-
-        // Sexual assault / child sexual abuse keywords (handle tense/verb variants like "forcefully sleeps", "forcefully slept")
-        if (/\b(rape|raped|sexual\s+assault|sexually\s+assaulted|forced\s+to\s+have\s+sex|force(?:d|fully)?\s+(?:to\s+have\s+sex|sleep(?:s|ing|ed)?\s+with)|molest|molested|molestation|sexual\s+abuse|sex\s+abuse|defile|defiled)\b/i.test(lowerText)) {
-            // detect age mentions near the sexual terms
-            var ageMatch = lowerText.match(/(\b(\d{1,2})\s*(years|yrs|year|y|months|mos)\b)/i);
-            if (ageMatch && parseInt(ageMatch[2], 10) <= 16) {
-                matchedCategories.push('child_sexual_abuse');
-            } else {
-                matchedCategories.push('sexual_assault');
-            }
-        }
-        
-        // Medical emergency keywords
-        if (/\b(medical emergency|heart attack|stroke|seizure|unconscious|passed out|fainted|bleeding|severe pain|chest pain|difficulty breathing|can't breathe|choking|allergic reaction|diabetic|epilepsy|convulsion)\b/i.test(lowerText)) {
-            matchedCategories.push('medical_emergency');
-        }
-        
-        // Natural disaster keywords
-        if (/\b(flood|flooding|flooded|storm|hurricane|tornado|earthquake|landslide|mudslide|tsunami|wildfire|drought|avalanche)\b/i.test(lowerText)) {
-            matchedCategories.push('natural_disaster');
-        }
-        
-        // Building/structure collapse keywords
-        if (/\b(building collapse|building collapsed|structure collapse|roof collapse|wall collapse|building fell|structure fell|construction accident)\b/i.test(lowerText)) {
-            matchedCategories.push('building_collapse');
-        }
-        
-        // Missing person keywords
-        if (/\b(missing person|missing child|missing|disappeared|lost|can't find|haven't seen|last seen)\b/i.test(lowerText)) {
-            matchedCategories.push('missing_person');
-        }
-        
-        // Drug-related keywords
-        if (/\b(drug|drugs|overdose|overdosed|drug dealer|drug dealing|substance abuse|narcotics|illegal drugs|drug trafficking)\b/i.test(lowerText)) {
-            matchedCategories.push('drug_related');
-        }
-        
-        // Homicide/Murder/Death keywords
-        if (/\b(murdered|killed|homicide|assassination|dead|death|fatality|fatalities|murder)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('homicide')) {
-                matchedCategories.push('homicide');
-            }
-        }
-        
-        // Armed attack keywords - includes herdsmen/communal conflicts
-        if (/\b(armed|weapon|gun|knife|pistol|rifle|machete|stab|stabbing|stabbed|blade|armed robbery|armed attack|herdsmen|herders|communal|ethnic|tribal|conflict|militia)\b/i.test(lowerText)) {
-            // If homicide already detected + armed/conflict keywords, it's likely armed_attack
-            if (matchedCategories.includes('homicide') || /\b(killing|killed|murder|murdered)\b/i.test(lowerText)) {
-                if (!matchedCategories.includes('armed_attack')) {
-                    matchedCategories.push('armed_attack');
-                }
-            } else if (!matchedCategories.includes('armed_attack')) {
-                matchedCategories.push('armed_attack');
-            }
-        }
-        
-        // Shooting/armed attack keywords
-        if (/\b(shooting|shoot|shot|gunfire|gun\s+fire|firing|shooter)\b/i.test(lowerText)) {
-            matchedCategories.push('shooting');
-        }
-        
-        // Terrorism/Insurgency keywords
-        if (/\b(terrorism|terrorist|boko\s+haram|isis|iswap|al-qaeda|al-shabaab|insurgency|insurgent|bombing|bomb|explosion|explode|ied|improvised|explosive|device|terrorist\s+attack|terror\s+attack)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('terrorism')) {
-                matchedCategories.push('terrorism');
-            }
-        }
-        
-        // Banditry keywords (armed robbery by large organized groups)
-        if (/\b(bandit|bandits|banditry|rustling|cattle\s+rustling|highway\s+robbery|armed\s+gang|armed\s+group|kidnappers|mass\s+abduction|convoy\s+attack)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('banditry')) {
-                matchedCategories.push('banditry');
-            }
-        }
-        
-        // Communal/Ethnic conflict keywords (replaces generic 'conflict')
-        if (/\b(communal\s+clash|ethnic\s+clash|border\s+dispute|land\s+dispute|chieftaincy\s+dispute|communal\s+war|ethno-?religious|tribal\s+war|herdsmen\s+farmers|pastoralist|settler|indigene)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('communal_conflict')) {
-                matchedCategories.push('communal_conflict');
-            }
-        }
-        
-        // Political violence / Election violence keywords
-        if (/\b(election\s+violence|political\s+violence|political\s+thuggery|political\s+assassination|electoral|campaign\s+violence|political\s+rally|ballot\s+snatching|election\s+rigging)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('political_violence')) {
-                matchedCategories.push('political_violence');
-            }
-        }
-        
-        // Police brutality keywords
-        if (/\b(police\s+brutality|police\s+violence|extrajudicial|extrajudicial\s+killing|police\s+shooting|police\s+harassment|police\s+abuse|sars|special\s+anti-?robbery|death\s+in\s+custody|unlawful\s+arrest|police\s+corruption|police\s+extortion|forcefully\s+collect|police\s+demand|police\s+bribe|bribery|graft)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('police_brutality')) {
-                matchedCategories.push('police_brutality');
-            }
-        }
-        
-        // Fraud keywords (offline / in-person scams)
-        if (/\b(scam|scammed|physically\s+scammed|defraud|defrauded|conman|conmen|rip\s+off|ripped\s+off|duped|tricked|fraud|fraudulent)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('fraud')) {
-                matchedCategories.push('fraud');
-            }
-        }
-        
-        // Cybercrime keywords (online/internet-specific frauds)
-        if (/\b(cybercrime|internet\s+fraud|phishing|ransomware|malware|hacking|identity\s+theft|online\s+fraud|advance\s+fee|419|romance\s+scam|credit\s+card\s+fraud|scammer|yahoo\s+boys|yahoo\s+girl|fraudulent)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('cybercrime')) {
-                matchedCategories.push('cybercrime');
-            }
-        }
-        
-        // Ritualism keywords
-        if (/\b(ritual|ritual\s+killing|ritualism|occult|voodoo|juju|muti|human\s+sacrifice|blood\s+ritual|ceremonial\s+killing|cult\s+ritual)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('ritualism')) {
-                matchedCategories.push('ritualism');
-            }
-        }
-        
-        // Human trafficking keywords
-        if (/\b(human\s+trafficking|trafficking\s+in\s+persons|sex\s+trafficking|labor\s+trafficking|prostitution\s+ring|human\s+smuggling|forced\s+labor|child\s+labor|slave\s+trade)\b/i.test(lowerText)) {
-            if (!matchedCategories.includes('human_trafficking')) {
-                matchedCategories.push('human_trafficking');
-            }
-        }
-        
-        
-        if (CATEGORY_DEBUG) {
-            console.log('=== categorizeByKeywords DEBUG ===');
-            console.log('Input text:', text);
-            console.log('Matched categories:', matchedCategories);
-        }
-        
-        // If multiple categories matched, return comma-separated
-        if (matchedCategories.length > 0) {
-            return matchedCategories.join(', ');
-        }
-        
-        // If no specific category found, return null to let deriveCategoryFromText or OpenAI suggest
-        return null;
-    }
-    
-    // Auto-categorize textarea input with debouncing
-    $(document).ready(function() {
-        console.log('Document ready - setting up textarea autocorrection');
-        
-        // Initialize spell checker for comprehensive autocorrection
-        initializeSpellChecker();
-        
-        // Ensure elements exist
-        if ($('#urgentCaseTextarea').length === 0) {
-            console.error('Textarea #urgentCaseTextarea not found');
-            return;
-        }
-        if ($('#issueCategoryTag').length === 0) {
-            console.error('Tag element #issueCategoryTag not found');
-            return;
-        }
-        
-        console.log('Elements found, attaching input and blur event listeners');
-
-        $('#urgentCaseTextarea').on('input', function() {
-            var text = $(this).val();
-            var tagElement = $('#issueCategoryTag');
-            var textarea = $(this);
-
-            // DEBUG
-            if (text && text.length > 0) {
-                console.log('Input event fired. Text length:', text.length);
-            }
-
-            // Clear previous timer
-            if (categorizationTimer) {
-                clearTimeout(categorizationTimer);
-            }
-
-            // Hide tag if text is empty
-            if (!text || text.trim().length === 0) {
-                tagElement.css('display', 'none');
-                lastCategorizedText = '';
+            if (!responseText) {
+                console.error('❌ Empty Gemini response');
+                callback(null);
                 return;
             }
 
-            // Show loading state when text is long enough
-            if (text.trim().length >= 10) {
-                tagElement.text('Analyzing...')
-                          .css({
-                              'display': 'inline-block',
-                              'background': '#e2e3e5',
-                              'color': '#6c757d'
-                          });
+            // Aggressively clean: strip all non-alpha, lowercase, take first word
+            var cleaned = responseText
+                .replace(/[^a-zA-Z\s]/g, '')
+                .trim()
+                .toLowerCase()
+                .split(/\s+/)[0];
+
+            console.log('🧹 Cleaned Gemini response:', cleaned);
+
+            var categories = Object.keys(issueCategories);
+            var matched = null;
+
+            // Exact match
+            for (var i = 0; i < categories.length; i++) {
+                if (cleaned === categories[i]) {
+                    matched = categories[i];
+                    break;
+                }
             }
 
-            // Debounce: treat user as finished after 1.5s of inactivity
-            categorizationTimer = setTimeout(function() {
-                var currentText = textarea.val();
-
-                // Apply autocorrection once user finished typing
-                var correctedText = autocorrectText(currentText);
-
-                if (correctedText !== currentText) {
-                    console.log('✓ AUTOCORRECTION APPLIED (on pause)');
-                    console.log('  Original:', currentText);
-                    console.log('  Corrected:', correctedText);
-                    try {
-                        // Update textarea and place cursor at end
-                        textarea.val(correctedText);
-                        var len = correctedText.length;
-                        textarea[0].setSelectionRange(len, len);
-                    } catch (e) {
-                        console.warn('Could not update textarea selection after autocorrect');
+            // Partial/stem match (e.g. "robberies" → "robbery", "fires" → "fire")
+            if (!matched) {
+                for (var j = 0; j < categories.length; j++) {
+                    if (cleaned.indexOf(categories[j]) !== -1 || categories[j].indexOf(cleaned) !== -1) {
+                        matched = categories[j];
+                        break;
                     }
-                } else {
-                    console.log('No corrections needed (on pause)');
+                }
+            }
+
+            if (matched) {
+                console.log('✅ Gemini matched:', matched);
+            } else {
+                console.log('⚠️ Gemini could not match. Cleaned response was:', cleaned);
+            }
+
+            callback(matched);
+        })
+        .catch(function(error) {
+            console.error('❌ Fetch error:', error.message);
+            callback(null);
+        });
+    }
+    
+    // ============================================
+    // Display category tag with engine source label
+    // source: 'gemini' | 'fallback'
+    // ============================================
+    function ensureSourceLabel() {
+        if ($('#classificationSource').length === 0) {
+            $('#issueCategoryTag').after(
+                '<span id="classificationSource" style="display:none;font-size:9px;font-weight:700;' +
+                'letter-spacing:0.8px;text-transform:uppercase;padding:2px 8px;border-radius:10px;' +
+                'margin-left:6px;vertical-align:middle;position:relative;top:-1px;"></span>'
+            );
+        }
+        return $('#classificationSource');
+    }
+
+    function displayCategoryTag(category, source) {
+        var $tagElement = $('#issueCategoryTag');
+        var $sourceLabel = ensureSourceLabel();
+
+        console.log('🏷️ displayCategoryTag:', category, '| source:', source);
+        
+        if (!category || !issueCategories[category]) {
+            $tagElement.hide().text('');
+            $sourceLabel.hide();
+            return;
+        }
+        
+        var categoryInfo = issueCategories[category];
+
+        $tagElement
+            .text(categoryInfo.displayName)
+            .attr('style',
+                'display:inline-block !important;' +
+                'visibility:visible !important;' +
+                'opacity:1 !important;' +
+                'background:' + categoryInfo.bgColor + ' !important;' +
+                'color:' + categoryInfo.color + ' !important;' +
+                'border:2px solid ' + categoryInfo.color + ' !important;' +
+                'border-radius:20px !important;' +
+                'padding:0.4em 1.2em !important;' +
+                'font-weight:600 !important;' +
+                'font-size:13px !important;' +
+                'margin-bottom:0.8em !important;' +
+                'box-shadow:0 3px 10px rgba(0,0,0,0.15) !important;' +
+                'text-transform:uppercase !important;' +
+                'letter-spacing:0.5px !important;'
+            )
+            .show();
+
+        // Source badge — blue pill for Gemini AI, amber pill for keyword fallback
+        if (source === 'gemini') {
+            $sourceLabel
+                .text('AI')
+                .attr('style',
+                    'display:inline-block !important;' +
+                    'background:#e8f0fe !important;' +
+                    'color:#1a5dc5 !important;' +
+                    'border:1px solid #b3cdf5 !important;' +
+                    'font-size:9px !important;font-weight:700 !important;' +
+                    'letter-spacing:0.8px !important;text-transform:uppercase !important;' +
+                    'padding:2px 8px !important;border-radius:10px !important;' +
+                    'margin-left:6px !important;vertical-align:middle !important;' +
+                    'position:relative !important;top:-1px !important;'
+                )
+                .show();
+        } else {
+            $sourceLabel
+                .text('Auto')
+                .attr('style',
+                    'display:inline-block !important;' +
+                    'background:#fff8e1 !important;' +
+                    'color:#b45309 !important;' +
+                    'border:1px solid #fbbf24 !important;' +
+                    'font-size:9px !important;font-weight:700 !important;' +
+                    'letter-spacing:0.8px !important;text-transform:uppercase !important;' +
+                    'padding:2px 8px !important;border-radius:10px !important;' +
+                    'margin-left:6px !important;vertical-align:middle !important;' +
+                    'position:relative !important;top:-1px !important;'
+                )
+                .show();
+        }
+
+        console.log('✅ Tag displayed:', categoryInfo.displayName, '| Badge:', source);
+    }
+
+    function showStatusTag(status) {
+        var $tagElement = $('#issueCategoryTag');
+        var $sourceLabel = $('#classificationSource');
+        if ($sourceLabel.length > 0) $sourceLabel.hide();
+
+        var text, styles;
+        if (status === 'analyzing') {
+            text = 'Analyzing...';
+            styles =
+                'display:inline-block !important;visibility:visible !important;' +
+                'background:#e2e3e5 !important;color:#6c757d !important;' +
+                'border:2px solid #adb5bd !important;border-radius:20px !important;' +
+                'padding:0.4em 1.2em !important;font-weight:600 !important;' +
+                'font-size:13px !important;margin-bottom:0.8em !important;';
+        } else {
+            text = 'Unable to classify';
+            styles =
+                'display:inline-block !important;visibility:visible !important;' +
+                'background:#fff3cd !important;color:#856404 !important;' +
+                'border:2px solid #ffc107 !important;border-radius:20px !important;' +
+                'padding:0.4em 1.2em !important;font-weight:600 !important;' +
+                'font-size:13px !important;margin-bottom:0.8em !important;';
+        }
+        $tagElement.text(text).attr('style', styles).show();
+    }
+
+    // ============================================
+    // Combined classifier: Gemini first, keyword fallback
+    // ============================================
+    function classifyText(text, callback) {
+        classify_with_gemini(text, function(geminiCategory) {
+            if (geminiCategory) {
+                console.log('✅ Using Gemini classification:', geminiCategory);
+                callback(geminiCategory, 'gemini');
+                return;
+            }
+            // Gemini failed or returned unmatched response — try keyword fallback
+            console.log('⚡ Gemini failed or unmatched — running keyword fallback...');
+            var fallbackCategory = classifyByKeywords(text);
+            if (fallbackCategory) {
+                console.log('✅ Keyword fallback matched:', fallbackCategory);
+                callback(fallbackCategory, 'fallback');
+            } else {
+                console.log('❌ Both Gemini and keyword fallback failed');
+                callback(null, null);
+            }
+        });
+    }
+    
+    // ============================================
+    // Auto-categorize textarea
+    // ============================================
+    $(document).ready(function() {
+        console.log('==========================================');
+        console.log('🚀 SafeNaija Classification System Initialized');
+        console.log('Gemini API Key:', GEMINI_API_KEY ? 'YES' : 'NO');
+        console.log('Categories:', Object.keys(issueCategories).length);
+        console.log('Keyword rules:', Object.keys(categoryKeywords).length, 'categories');
+        console.log('==========================================');
+        
+        var $textarea = $('#urgentCaseTextarea');
+        var $tagElement = $('#issueCategoryTag');
+        
+        if ($textarea.length === 0) {
+            console.error('❌ CRITICAL: Textarea #urgentCaseTextarea not found!');
+            return;
+        }
+        if ($tagElement.length === 0) {
+            console.error('❌ CRITICAL: Tag element #issueCategoryTag not found!');
+            return;
+        }
+        
+        console.log('✅ DOM elements found');
+
+        $textarea.on('input', function() {
+            var text = $(this).val().trim();
+            console.log('⌨️ Input event, length:', text.length);
+
+            if (categorizationTimer) clearTimeout(categorizationTimer);
+
+            if (!text || text.length === 0) {
+                $tagElement.hide().text('');
+                var $sl = $('#classificationSource');
+                if ($sl.length) $sl.hide();
+                lastCategorizedText = '';
+                isClassifying = false;
+                return;
+            }
+
+            if (text.length >= 10) {
+                showStatusTag('analyzing');
+            } else {
+                $tagElement.hide().text('');
+                var $sl2 = $('#classificationSource');
+                if ($sl2.length) $sl2.hide();
+            }
+
+            categorizationTimer = setTimeout(function() {
+                var currentText = text;
+
+                if (currentText === lastCategorizedText || currentText.length < 10) {
+                    console.log('⏭️ Skipping: already classified or too short');
+                    return;
+                }
+                if (isClassifying) {
+                    console.log('⏸️ Classification in progress, skipping');
+                    return;
                 }
 
-                // Now categorize the corrected text
-                categorizeWithOpenAI(correctedText, function(category, dynamicCategory, reason) {
-                    var categories = [];
-                    if (category) categories = [category];
-                    else if (dynamicCategory) categories = String(dynamicCategory).split(',').map(function(c){ return c.trim(); }).filter(Boolean);
+                console.log('⏰ Starting classification:', currentText.substring(0, 60));
+                isClassifying = true;
 
-                    if (categories.length > 0) {
-                        // Display comma-joined friendly names; use first category's color
-                        var displayNames = categories.map(function(c){
-                            try { return getCategoryInfo(c).displayName; } catch (e) { return c; }
-                        });
-                        var firstInfo = getCategoryInfo(categories[0]);
-                        tagElement.text(displayNames.join(', '))
-                                  .attr('title', reason || '')
-                                  .css({
-                                      'display': 'inline-block',
-                                      'background': firstInfo.bgColor,
-                                      'color': firstInfo.color,
-                                      'border-color': firstInfo.color
-                                  });
+                classifyText(currentText, function(category, source) {
+                    isClassifying = false;
+                    if (category) {
+                        displayCategoryTag(category, source);
+                        lastCategorizedText = currentText;
                     } else {
-                        tagElement.css('display', 'none');
+                        showStatusTag('error');
                     }
                 });
-            }, 1500); // Wait 1.5 seconds after user stops typing
+            }, 1500);
         });
 
-        // Also apply autocorrection immediately when the user leaves the textarea
-        $('#urgentCaseTextarea').on('blur', function() {
-            var textarea = $(this);
-            var tagElement = $('#issueCategoryTag');
-            var text = textarea.val();
+        $textarea.on('blur', function() {
+            var text = $(this).val().trim();
 
-            if (!text || text.trim().length === 0) {
-                tagElement.css('display', 'none');
+            if (!text || text.length === 0) {
+                $tagElement.hide().text('');
+                var $sl = $('#classificationSource');
+                if ($sl.length) $sl.hide();
                 return;
             }
 
-            // Clear any pending debounce
             if (categorizationTimer) {
                 clearTimeout(categorizationTimer);
                 categorizationTimer = null;
             }
 
-            // Apply autocorrect on blur
-            var correctedText = autocorrectText(text);
-            if (correctedText !== text) {
-                console.log('✓ AUTOCORRECTION APPLIED (on blur)');
-                console.log('  Original:', text);
-                console.log('  Corrected:', correctedText);
-                try {
-                    textarea.val(correctedText);
-                } catch (e) {
-                    console.warn('Could not set textarea value after autocorrect on blur');
-                }
+            if (text !== lastCategorizedText && text.length >= 10 && !isClassifying) {
+                console.log('🔄 Blur event - immediate classification');
+                isClassifying = true;
+                showStatusTag('analyzing');
+
+                classifyText(text, function(category, source) {
+                    isClassifying = false;
+                    if (category) {
+                        displayCategoryTag(category, source);
+                        lastCategorizedText = text;
+                    } else {
+                        showStatusTag('error');
+                    }
+                });
             }
-
-            // Immediately categorize the corrected text
-            categorizeWithOpenAI(correctedText, function(category, dynamicCategory, reason) {
-                var categories = [];
-                if (category) categories = [category];
-                else if (dynamicCategory) categories = String(dynamicCategory).split(',').map(function(c){ return c.trim(); }).filter(Boolean);
-
-                if (categories.length > 0) {
-                    var displayNames = categories.map(function(c){
-                        try { return getCategoryInfo(c).displayName; } catch (e) { return c; }
-                    });
-                    var firstInfo = getCategoryInfo(categories[0]);
-                    tagElement.text(displayNames.join(', '))
-                              .attr('title', reason || '')
-                              .css({
-                                  'display': 'inline-block',
-                                  'background': firstInfo.bgColor,
-                                  'color': firstInfo.color,
-                                  'border-color': firstInfo.color
-                              });
-                } else {
-                    tagElement.css('display', 'none');
-                }
-            });
         });
     });
-    
+
+
+    // ============================================
     // State to LGA mapping
+    // ============================================
     var stateLGAs = {
         'abia': ['Aba North', 'Aba South', 'Arochukwu', 'Bende', 'Ikwuano', 'Isiala Ngwa North', 'Isiala Ngwa South', 'Isuikwuato', 'Obi Ngwa', 'Ohafia', 'Osisioma', 'Ugwunagbo', 'Ukwa East', 'Ukwa West', 'Umuahia North', 'Umuahia South', 'Umu Nneochi'],
         'adamawa': ['Demsa', 'Fufure', 'Ganye', 'Gayuk', 'Gombi', 'Grie', 'Hong', 'Jada', 'Larmurde', 'Madagali', 'Maiha', 'Mayo Belwa', 'Michika', 'Mubi North', 'Mubi South', 'Numan', 'Shelleng', 'Song', 'Toungo', 'Yola North', 'Yola South'],
@@ -1416,18 +638,12 @@
         'fct': ['Abaji', 'Bwari', 'Gwagwalada', 'Kuje', 'Kwali', 'Municipal Area Council']
     };
     
-    // Populate LGA dropdown based on selected state
     $('#stateSelect').on('change', function() {
         var selectedState = $(this).val();
         var lgaSelect = $('#lgaSelect');
-        
-        // Clear existing options except the first one
         lgaSelect.find('option:not(:first)').remove();
-        
-        // If a state is selected, populate LGAs
         if (selectedState && stateLGAs[selectedState]) {
-            var lgas = stateLGAs[selectedState];
-            lgas.forEach(function(lga) {
+            stateLGAs[selectedState].forEach(function(lga) {
                 lgaSelect.append($('<option></option>')
                     .attr('value', lga.toLowerCase().replace(/\s+/g, '_'))
                     .text(lga)
@@ -1436,659 +652,249 @@
         }
     });
     
-    // State name mapping for geocoding responses - expanded with more variations
     var stateNameMapping = {
-        'abia': ['abia', 'abia state'],
-        'adamawa': ['adamawa', 'adamawa state'],
+        'abia': ['abia', 'abia state'], 'adamawa': ['adamawa', 'adamawa state'],
         'akwa_ibom': ['akwa ibom', 'akwa-ibom', 'akwa ibom state'],
-        'anambra': ['anambra', 'anambra state'],
-        'bauchi': ['bauchi', 'bauchi state'],
-        'bayelsa': ['bayelsa', 'bayelsa state'],
-        'benue': ['benue', 'benue state'],
-        'borno': ['borno', 'borno state'],
-        'cross_river': ['cross river', 'cross-river', 'cross river state'],
-        'delta': ['delta', 'delta state'],
-        'ebonyi': ['ebonyi', 'ebonyi state'],
-        'edo': ['edo', 'edo state'],
-        'ekiti': ['ekiti', 'ekiti state'],
-        'enugu': ['enugu', 'enugu state'],
-        'gombe': ['gombe', 'gombe state'],
-        'imo': ['imo', 'imo state'],
-        'jigawa': ['jigawa', 'jigawa state'],
-        'kaduna': ['kaduna', 'kaduna state'],
-        'kano': ['kano', 'kano state'],
-        'katsina': ['katsina', 'katsina state'],
-        'kebbi': ['kebbi', 'kebbi state'],
-        'kogi': ['kogi', 'kogi state'],
-        'kwara': ['kwara', 'kwara state'],
-        'lagos': ['lagos', 'lagos state'],
-        'nasarawa': ['nasarawa', 'nasarawa state'],
-        'niger': ['niger', 'niger state'],
-        'ogun': ['ogun', 'ogun state'],
-        'ondo': ['ondo', 'ondo state'],
-        'osun': ['osun', 'osun state'],
-        'oyo': ['oyo', 'oyo state'],
-        'plateau': ['plateau', 'plateau state'],
-        'rivers': ['rivers', 'rivers state'],
-        'sokoto': ['sokoto', 'sokoto state'],
-        'taraba': ['taraba', 'taraba state'],
-        'yobe': ['yobe', 'yobe state'],
+        'anambra': ['anambra', 'anambra state'], 'bauchi': ['bauchi', 'bauchi state'],
+        'bayelsa': ['bayelsa', 'bayelsa state'], 'benue': ['benue', 'benue state'],
+        'borno': ['borno', 'borno state'], 'cross_river': ['cross river', 'cross-river', 'cross river state'],
+        'delta': ['delta', 'delta state'], 'ebonyi': ['ebonyi', 'ebonyi state'],
+        'edo': ['edo', 'edo state'], 'ekiti': ['ekiti', 'ekiti state'],
+        'enugu': ['enugu', 'enugu state'], 'gombe': ['gombe', 'gombe state'],
+        'imo': ['imo', 'imo state'], 'jigawa': ['jigawa', 'jigawa state'],
+        'kaduna': ['kaduna', 'kaduna state'], 'kano': ['kano', 'kano state'],
+        'katsina': ['katsina', 'katsina state'], 'kebbi': ['kebbi', 'kebbi state'],
+        'kogi': ['kogi', 'kogi state'], 'kwara': ['kwara', 'kwara state'],
+        'lagos': ['lagos', 'lagos state'], 'nasarawa': ['nasarawa', 'nasarawa state'],
+        'niger': ['niger', 'niger state'], 'ogun': ['ogun', 'ogun state'],
+        'ondo': ['ondo', 'ondo state'], 'osun': ['osun', 'osun state'],
+        'oyo': ['oyo', 'oyo state'], 'plateau': ['plateau', 'plateau state'],
+        'rivers': ['rivers', 'rivers state'], 'sokoto': ['sokoto', 'sokoto state'],
+        'taraba': ['taraba', 'taraba state'], 'yobe': ['yobe', 'yobe state'],
         'zamfara': ['zamfara', 'zamfara state'],
         'fct': ['fct', 'federal capital territory', 'abuja', 'federal capital', 'abuja fct']
     };
     
-    // Major cities and their states - helps with accurate detection
     var cityToStateMapping = {
-        'akure': 'ondo',
-        'ondo': 'ondo',
-        'owo': 'ondo',
-        'ado ekiti': 'ekiti',
-        'ado-ekiti': 'ekiti',
-        'ikere': 'ekiti',
-        'abeokuta': 'ogun',
-        'ijebu ode': 'ogun',
-        'ibadan': 'oyo',
-        'ogbomoso': 'oyo',
-        'oyo': 'oyo',
-        'osogbo': 'osun',
-        'ile-ife': 'osun',
-        'ife': 'osun',
-        'ilesa': 'osun',
-        'lagos': 'lagos',
-        'ikeja': 'lagos',
-        'abuja': 'fct',
-        'gwagwalada': 'fct',
-        'kano': 'kano',
-        'kaduna': 'kaduna',
-        'port harcourt': 'rivers',
-        'benin city': 'edo',
-        'benin': 'edo',
-        'enugu': 'enugu',
-        'onitsha': 'anambra',
-        'awka': 'anambra',
-        'nnewi': 'anambra',
-        'calabar': 'cross_river',
-        'uyo': 'akwa_ibom',
-        'owerri': 'imo',
-        'aba': 'abia',
-        'umuahia': 'abia',
-        'makurdi': 'benue',
-        'jos': 'plateau',
-        'minna': 'niger',
-        'lokoja': 'kogi',
-        'ilorin': 'kwara',
-        'jalingo': 'taraba',
-        'yola': 'adamawa',
-        'maiduguri': 'borno',
-        'gombe': 'gombe',
-        'bauchi': 'bauchi',
-        'sokoto': 'sokoto',
-        'birnin kebbi': 'kebbi',
-        'gusau': 'zamfara',
-        'damaturu': 'yobe',
-        'dutse': 'jigawa',
-        'katsina': 'katsina',
-        'asaba': 'delta',
-        'warri': 'delta',
-        'yenagoa': 'bayelsa',
-        'abakaliki': 'ebonyi'
+        'akure': 'ondo', 'ondo': 'ondo', 'owo': 'ondo',
+        'ado ekiti': 'ekiti', 'ado-ekiti': 'ekiti', 'ikere': 'ekiti',
+        'abeokuta': 'ogun', 'ijebu ode': 'ogun',
+        'ibadan': 'oyo', 'ogbomoso': 'oyo', 'oyo': 'oyo',
+        'osogbo': 'osun', 'ile-ife': 'osun', 'ife': 'osun', 'ilesa': 'osun',
+        'lagos': 'lagos', 'ikeja': 'lagos', 'abuja': 'fct', 'gwagwalada': 'fct',
+        'kano': 'kano', 'kaduna': 'kaduna', 'port harcourt': 'rivers',
+        'benin city': 'edo', 'benin': 'edo', 'enugu': 'enugu',
+        'onitsha': 'anambra', 'awka': 'anambra', 'nnewi': 'anambra',
+        'calabar': 'cross_river', 'uyo': 'akwa_ibom', 'owerri': 'imo',
+        'aba': 'abia', 'umuahia': 'abia', 'makurdi': 'benue', 'jos': 'plateau',
+        'minna': 'niger', 'lokoja': 'kogi', 'ilorin': 'kwara', 'jalingo': 'taraba',
+        'yola': 'adamawa', 'maiduguri': 'borno', 'gombe': 'gombe', 'bauchi': 'bauchi',
+        'sokoto': 'sokoto', 'birnin kebbi': 'kebbi', 'gusau': 'zamfara',
+        'damaturu': 'yobe', 'dutse': 'jigawa', 'katsina': 'katsina',
+        'asaba': 'delta', 'warri': 'delta', 'yenagoa': 'bayelsa', 'abakaliki': 'ebonyi'
     };
     
-    // Function to get state from coordinates (approximate boundaries)
     function getStateFromCoordinates(lat, lon) {
-        // Approximate bounding boxes for Nigerian states
-        // Format: [minLat, maxLat, minLon, maxLon]
         var stateBoundaries = {
-            'ondo': [5.9, 7.9, 4.5, 6.1],      // Akure is at ~7.25°N, 5.2°E
-            'ekiti': [7.2, 8.1, 4.8, 5.9],    // Ado-Ekiti is at ~7.6°N, 5.2°E
-            'osun': [7.2, 8.2, 4.0, 5.0],     // Osogbo is at ~7.8°N, 4.6°E
-            'oyo': [7.2, 9.1, 2.7, 4.6],
-            'ogun': [6.4, 7.8, 2.7, 4.3],
-            'lagos': [6.4, 6.7, 2.7, 4.3],
-            'fct': [8.6, 9.3, 6.7, 7.8],       // FCT/Abuja
-            'plateau': [8.6, 10.0, 8.5, 9.9],
-            'nasarawa': [7.5, 9.5, 7.0, 9.0],
-            'kogi': [6.7, 8.8, 5.5, 7.9],
-            'benue': [6.5, 8.1, 7.3, 9.6],
-            'niger': [8.2, 11.0, 3.5, 7.7],
-            'kwara': [7.7, 9.6, 2.7, 6.0],
-            'kaduna': [9.0, 11.3, 6.2, 8.5],
-            'kano': [10.5, 13.0, 7.6, 9.5],
-            'jigawa': [11.0, 13.5, 8.5, 10.5],
-            'katsina': [11.5, 13.5, 6.9, 9.0],
-            'sokoto': [11.5, 13.9, 4.0, 6.9],
-            'zamfara': [11.0, 13.2, 5.2, 7.2],
-            'kebbi': [10.5, 13.0, 3.5, 5.5],
-            'rivers': [4.4, 5.3, 6.4, 7.6],
-            'bayelsa': [4.4, 5.5, 5.5, 6.8],
-            'delta': [5.0, 6.5, 5.2, 6.9],
-            'edo': [5.8, 7.7, 5.4, 6.8],
-            'anambra': [5.6, 6.9, 6.6, 7.3],
-            'enugu': [5.9, 7.3, 6.9, 7.9],
-            'ebonyi': [5.7, 6.9, 7.7, 8.5],
-            'abia': [4.8, 6.1, 7.2, 8.1],
-            'imo': [4.9, 6.1, 6.6, 7.6],
-            'akwa_ibom': [4.3, 5.6, 7.3, 8.4],
-            'cross_river': [4.3, 6.9, 7.7, 9.4],
-            'adamawa': [7.2, 11.0, 11.0, 14.0],
-            'taraba': [6.4, 9.3, 9.3, 12.0],
-            'gombe': [9.3, 11.2, 10.2, 12.0],
-            'bauchi': [9.8, 12.3, 9.0, 11.0],
-            'yobe': [11.0, 13.5, 10.5, 13.0],
+            'ondo': [5.9, 7.9, 4.5, 6.1], 'ekiti': [7.2, 8.1, 4.8, 5.9],
+            'osun': [7.2, 8.2, 4.0, 5.0], 'oyo': [7.2, 9.1, 2.7, 4.6],
+            'ogun': [6.4, 7.8, 2.7, 4.3], 'lagos': [6.4, 6.7, 2.7, 4.3],
+            'fct': [8.6, 9.3, 6.7, 7.8], 'plateau': [8.6, 10.0, 8.5, 9.9],
+            'nasarawa': [7.5, 9.5, 7.0, 9.0], 'kogi': [6.7, 8.8, 5.5, 7.9],
+            'benue': [6.5, 8.1, 7.3, 9.6], 'niger': [8.2, 11.0, 3.5, 7.7],
+            'kwara': [7.7, 9.6, 2.7, 6.0], 'kaduna': [9.0, 11.3, 6.2, 8.5],
+            'kano': [10.5, 13.0, 7.6, 9.5], 'jigawa': [11.0, 13.5, 8.5, 10.5],
+            'katsina': [11.5, 13.5, 6.9, 9.0], 'sokoto': [11.5, 13.9, 4.0, 6.9],
+            'zamfara': [11.0, 13.2, 5.2, 7.2], 'kebbi': [10.5, 13.0, 3.5, 5.5],
+            'rivers': [4.4, 5.3, 6.4, 7.6], 'bayelsa': [4.4, 5.5, 5.5, 6.8],
+            'delta': [5.0, 6.5, 5.2, 6.9], 'edo': [5.8, 7.7, 5.4, 6.8],
+            'anambra': [5.6, 6.9, 6.6, 7.3], 'enugu': [5.9, 7.3, 6.9, 7.9],
+            'ebonyi': [5.7, 6.9, 7.7, 8.5], 'abia': [4.8, 6.1, 7.2, 8.1],
+            'imo': [4.9, 6.1, 6.6, 7.6], 'akwa_ibom': [4.3, 5.6, 7.3, 8.4],
+            'cross_river': [4.3, 6.9, 7.7, 9.4], 'adamawa': [7.2, 11.0, 11.0, 14.0],
+            'taraba': [6.4, 9.3, 9.3, 12.0], 'gombe': [9.3, 11.2, 10.2, 12.0],
+            'bauchi': [9.8, 12.3, 9.0, 11.0], 'yobe': [11.0, 13.5, 10.5, 13.0],
             'borno': [10.5, 13.9, 11.0, 14.5]
         };
-        
-        // Find which state the coordinates fall into
         for (var state in stateBoundaries) {
-            var bounds = stateBoundaries[state];
-            if (lat >= bounds[0] && lat <= bounds[1] && lon >= bounds[2] && lon <= bounds[3]) {
-                return state;
-            }
+            var b = stateBoundaries[state];
+            if (lat >= b[0] && lat <= b[1] && lon >= b[2] && lon <= b[3]) return state;
         }
-        
         return null;
     }
-    
-    // Function to validate detected state against coordinates
-    function validateStateByCoordinates(lat, lon, detectedState, displayName) {
-        var coordState = getStateFromCoordinates(lat, lon);
-        
-        if (!coordState) {
-            return detectedState; // Keep original if no coordinate match
-        }
-        
-        // If coordinate state differs from detected state, use coordinate state
-        if (coordState !== detectedState) {
-            // Additional verification using display name
-            var displayLower = (displayName || '').toLowerCase();
-            
-            // Get state names for both states
-            var coordStateNames = stateNameMapping[coordState] || [];
-            var detectedStateNames = stateNameMapping[detectedState] || [];
-            
-            // Check if display name strongly suggests detected state
-            var strongMatch = false;
-            for (var i = 0; i < detectedStateNames.length; i++) {
-                var stateName = detectedStateNames[i];
-                if (stateName.length > 3) {
-                    var regex = new RegExp('\\b' + stateName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
-                    if (regex.test(displayLower)) {
-                        strongMatch = true;
-                        break;
-                    }
-                }
-            }
-            
-            // Check if display name mentions coordinate state
-            var coordMatch = false;
-            for (var i = 0; i < coordStateNames.length; i++) {
-                var stateName = coordStateNames[i];
-                if (stateName.length > 3) {
-                    var regex = new RegExp('\\b' + stateName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
-                    if (regex.test(displayLower)) {
-                        coordMatch = true;
-                        break;
-                    }
-                }
-            }
-            
-            // Priority: coordinates > display name
-            // If coordinates say Ondo but API says FCT, trust coordinates unless display strongly suggests FCT
-            if (coordMatch || (!strongMatch && coordState)) {
-                return coordState;
-            }
-        }
-        
-        return detectedState;
-    }
-    
-    // Function to find state from city name
+
     function findStateFromCity(cityName) {
         if (!cityName) return null;
-        var lowerCityName = cityName.toLowerCase().trim();
-        
-        // Direct match
-        if (cityToStateMapping[lowerCityName]) {
-            return cityToStateMapping[lowerCityName];
-        }
-        
-        // Partial match
+        var lc = cityName.toLowerCase().trim();
+        if (cityToStateMapping[lc]) return cityToStateMapping[lc];
         for (var city in cityToStateMapping) {
-            if (lowerCityName.indexOf(city) !== -1 || city.indexOf(lowerCityName) !== -1) {
-                return cityToStateMapping[city];
-            }
+            if (lc.indexOf(city) !== -1 || city.indexOf(lc) !== -1) return cityToStateMapping[city];
         }
-        
         return null;
     }
-    
-    // Function to find state value from state name with fuzzy matching
+
     function findStateValue(stateName) {
         if (!stateName) return null;
-        var lowerStateName = stateName.toLowerCase().trim();
-        
-        // Direct match
+        var lc = stateName.toLowerCase().trim();
         for (var key in stateNameMapping) {
-            if (stateNameMapping[key].indexOf(lowerStateName) !== -1) {
-                return key;
+            if (stateNameMapping[key].indexOf(lc) !== -1) return key;
+        }
+        for (var key2 in stateNameMapping) {
+            for (var i = 0; i < stateNameMapping[key2].length; i++) {
+                if (lc.indexOf(stateNameMapping[key2][i]) !== -1 || stateNameMapping[key2][i].indexOf(lc) !== -1) return key2;
             }
         }
-        
-        // Fuzzy match - check if state name contains any of our state names
-        for (var key in stateNameMapping) {
-            for (var i = 0; i < stateNameMapping[key].length; i++) {
-                if (lowerStateName.indexOf(stateNameMapping[key][i]) !== -1 || 
-                    stateNameMapping[key][i].indexOf(lowerStateName) !== -1) {
-                    return key;
-                }
-            }
-        }
-        
         return null;
     }
-    
-    // Function to find LGA from address components - improved with multiple checks
+
     function findLGAFromAddress(addressData, stateValue) {
         if (!stateValue || !stateLGAs[stateValue]) return null;
-        
         var lgas = stateLGAs[stateValue];
         var searchText = '';
-        
-        // Build search text from multiple address fields
         if (typeof addressData === 'string') {
             searchText = addressData.toLowerCase();
         } else if (typeof addressData === 'object') {
-            // Check multiple fields in order of preference
             var fields = ['city', 'town', 'municipality', 'county', 'suburb', 'village', 'district', 'local_government', 'lga'];
-            var addressLower = '';
-            
-            // Get display name if available
-            if (addressData.display_name) {
-                addressLower += ' ' + addressData.display_name.toLowerCase();
-            }
-            
-            // Check address object fields
+            if (addressData.display_name) searchText += ' ' + addressData.display_name.toLowerCase();
             if (addressData.address) {
-                for (var f = 0; f < fields.length; f++) {
-                    if (addressData.address[fields[f]]) {
-                        addressLower += ' ' + addressData.address[fields[f]].toLowerCase();
-                    }
-                }
-                // Also check other common fields
-                if (addressData.address.city_district) {
-                    addressLower += ' ' + addressData.address.city_district.toLowerCase();
-                }
-                if (addressData.address.state_district) {
-                    addressLower += ' ' + addressData.address.state_district.toLowerCase();
-                }
+                fields.forEach(function(f) { if (addressData.address[f]) searchText += ' ' + addressData.address[f].toLowerCase(); });
+                if (addressData.address.city_district) searchText += ' ' + addressData.address.city_district.toLowerCase();
+                if (addressData.address.state_district) searchText += ' ' + addressData.address.state_district.toLowerCase();
             }
-            
-            searchText = addressLower;
         }
-        
-        // Try exact match first
         for (var i = 0; i < lgas.length; i++) {
-            var lgaLower = lgas[i].toLowerCase();
-            // Exact match
-            if (searchText.indexOf(lgaLower) !== -1) {
-                return lgas[i];
-            }
+            if (searchText.indexOf(lgas[i].toLowerCase()) !== -1) return lgas[i];
         }
-        
-        // Try partial match (for cases like "Ikeja" matching "Ikeja LGA" or similar)
-        for (var i = 0; i < lgas.length; i++) {
-            var lgaLower = lgas[i].toLowerCase();
-            var lgaWords = lgaLower.split(/\s+/);
-            
-            // Check if all significant words of LGA are in the search text
-            var allWordsFound = true;
-            for (var w = 0; w < lgaWords.length; w++) {
-                if (lgaWords[w].length > 2) { // Skip short words like "of", "the", etc.
-                    if (searchText.indexOf(lgaWords[w]) === -1) {
-                        allWordsFound = false;
-                        break;
-                    }
-                }
-            }
-            if (allWordsFound && lgaWords.length > 0) {
-                return lgas[i];
-            }
+        for (var j = 0; j < lgas.length; j++) {
+            var words = lgas[j].toLowerCase().split(/\s+/);
+            var all = words.every(function(w) { return w.length <= 2 || searchText.indexOf(w) !== -1; });
+            if (all) return lgas[j];
         }
-        
-        // Try matching first word of LGA (for cases where city name matches LGA name)
-        // e.g., "Ikeja" city matching "Ikeja" LGA
-        for (var i = 0; i < lgas.length; i++) {
-            var lgaLower = lgas[i].toLowerCase();
-            var firstWord = lgaLower.split(/\s+/)[0];
-            if (firstWord.length > 3 && searchText.indexOf(firstWord) !== -1) {
-                // Check if it's a standalone word (not part of another word)
-                var regex = new RegExp('\\b' + firstWord + '\\b', 'i');
-                if (regex.test(searchText)) {
-                    return lgas[i];
-                }
-            }
-        }
-        
         return null;
     }
     
-    // Autodetect location functionality using free OpenStreetMap Nominatim
     $('#autodetectLink').on('click', function(e) {
         e.preventDefault();
-        
         var link = $(this);
         var originalText = link.text();
-        var geolocationTimeout;
-        var watchId;
-        
-        // Update link text to show loading
+        var geolocationTimeout, watchId;
         link.text('Detecting location...').css('pointer-events', 'none');
-        
-        // Check if geolocation is supported
         if (!navigator.geolocation) {
             alert('Geolocation is not supported by your browser.');
             link.text(originalText).css('pointer-events', 'auto');
             return;
         }
         
-        // Function to process geocoding response from OpenStreetMap
         function processGeocodingResponse(data, lat, lon) {
-            if (data) {
-                var address = data.address || {};
-                var displayName = data.display_name || '';
-                
-                // Set address
-                $('#addressInput').val(displayName);
-                
-                var stateValue = null;
-                
-                // Priority 1: Check city/town name first (most reliable for major cities like Akure)
-                var cityName = address.city || 
-                              address.town || 
-                              address.municipality ||
-                              address.village ||
-                              address.suburb || '';
-                
-                if (cityName) {
-                    stateValue = findStateFromCity(cityName);
-                }
-                
-                // Priority 2: Check state field directly from API
-                if (!stateValue) {
-                    var stateName = address.state || 
-                                   address.region || 
-                                   address.province || 
-                                   address.state_district ||
-                                   address.county || '';
-                    
-                    if (stateName) {
-                        stateValue = findStateValue(stateName);
-                    }
-                }
-                
-                // Priority 3: Get state from coordinates (fallback)
-                if (!stateValue) {
-                    var coordState = getStateFromCoordinates(lat, lon);
-                    if (coordState) {
-                        stateValue = coordState;
-                    }
-                }
-                
-                // Priority 4: Search in display name for state (last resort)
-                if (!stateValue && displayName) {
-                    var displayLower = displayName.toLowerCase();
-                    
-                    // First check for city names in display name
-                    for (var city in cityToStateMapping) {
-                        if (displayLower.indexOf(city) !== -1) {
-                            var cityState = cityToStateMapping[city];
-                            // Validate against coordinates
-                            if (coordState && coordState !== cityState) {
-                                stateValue = coordState;
-                            } else {
-                                stateValue = cityState;
-                            }
-                            break;
-                        }
-                    }
-                    
-                    // If no city found, search for state names
-                    if (!stateValue) {
-                        for (var key in stateNameMapping) {
-                            var stateNames = stateNameMapping[key];
-                            for (var j = 0; j < stateNames.length; j++) {
-                                if (displayLower.indexOf(stateNames[j]) !== -1) {
-                                    var statePattern = stateNames[j];
-                                    if (statePattern.length >= 4) {
-                                        var regex = new RegExp('\\b' + statePattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
-                                        if (regex.test(displayLower)) {
-                                            // Validate against coordinates
-                                            if (coordState && coordState !== key) {
-                                                stateValue = coordState;
-                                            } else {
-                                                stateValue = key;
-                                            }
-                                            break;
-                                        }
-                                    } else if (displayLower.indexOf(statePattern) !== -1) {
-                                        if (coordState && coordState !== key) {
-                                            stateValue = coordState;
-                                        } else {
-                                            stateValue = key;
-                                        }
-                                        break;
-                                    }
-                                }
-                            }
-                            if (stateValue) break;
-                        }
-                    }
-                    
-                    // Final fallback to coordinates
-                    if (!stateValue && coordState) {
-                        stateValue = coordState;
-                    }
-                }
-                
-                if (stateValue) {
-                    // Set state dropdown
-                    $('#stateSelect').val(stateValue).trigger('change');
-                    
-                    // Try to find LGA - pass the entire data object for better matching
-                    var lgaName = findLGAFromAddress(data, stateValue);
-                    
-                    if (lgaName) {
-                        // Wait a bit for LGA dropdown to populate
-                        setTimeout(function() {
-                            var lgaValue = lgaName.toLowerCase().replace(/\s+/g, '_');
-                            var lgaSelect = $('#lgaSelect');
-                            
-                            // Try to set the value
-                            if (lgaSelect.find('option[value="' + lgaValue + '"]').length > 0) {
-                                lgaSelect.val(lgaValue);
-                            } else {
-                                // Try matching by text
-                                lgaSelect.find('option').each(function() {
-                                    if ($(this).text().toLowerCase() === lgaName.toLowerCase()) {
-                                        lgaSelect.val($(this).val());
-                                        return false;
-                                    }
-                                });
-                            }
-                        }, 500);
-                    }
-                    
-                    link.text(originalText).css('pointer-events', 'auto');
-                } else {
-                    // State not found - still set GPS coordinates
-                    alert('State could not be automatically detected. Please select your state manually. GPS coordinates have been set.');
-                    link.text(originalText).css('pointer-events', 'auto');
-                }
-            } else {
+            if (!data) {
                 alert('Could not retrieve address information. GPS coordinates have been set.');
                 link.text(originalText).css('pointer-events', 'auto');
+                return;
             }
-        }
-        
-        // Function to reverse geocode using free OpenStreetMap Nominatim
-        function reverseGeocode(lat, lon, attempt) {
-            attempt = attempt || 1;
-            link.text('Getting address... (' + attempt + '/2)');
-            
-            // Use OpenStreetMap Nominatim - completely free, no API key needed
-            // Try multiple proxy services for better reliability
-            var services = [
-                // Service 1: AllOrigins proxy (most reliable and fastest)
-                'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon + '&zoom=16&addressdetails=1&countrycodes=ng&accept-language=en'),
-                // Service 2: CORS Proxy alternative
-                'https://corsproxy.io/?https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon + '&zoom=16&addressdetails=1&countrycodes=ng&accept-language=en'
-            ];
-            
-            var serviceIndex = Math.min(attempt - 1, services.length - 1);
-            var serviceUrl = services[serviceIndex];
-            
-            $.ajax({
-                url: serviceUrl,
-                method: 'GET',
-                dataType: 'json',
-                timeout: 10000, // 10 second timeout (reduced for faster response)
-                headers: {},
-                success: function(data) {
-                    if (data && (data.address || data.display_name)) {
-                        processGeocodingResponse(data, lat, lon);
-                    } else if (attempt < 2) {
-                        // Retry with next service
-                        setTimeout(function() {
-                            reverseGeocode(lat, lon, attempt + 1);
-                        }, 1000);
-                    } else {
-                        alert('Could not retrieve address information. GPS coordinates have been set. Please fill in the location details manually.');
-                        link.text(originalText).css('pointer-events', 'auto');
-                    }
-                },
-                error: function(xhr, status, error) {
-                    if (status === 'timeout') {
-                        link.text('Request timed out, retrying...');
-                    }
-                    
-                    if (attempt < 2) {
-                        // Retry with next service
-                        setTimeout(function() {
-                            reverseGeocode(lat, lon, attempt + 1);
-                        }, 1000);
-                    } else {
-                        alert('Error retrieving address information. GPS coordinates have been set. Please fill in the location details manually.');
-                        link.text(originalText).css('pointer-events', 'auto');
+            var address = data.address || {};
+            var displayName = data.display_name || '';
+            $('#addressInput').val(displayName);
+            var stateValue = findStateFromCity(address.city || address.town || address.municipality || address.village || address.suburb || '');
+            if (!stateValue) stateValue = findStateValue(address.state || address.region || address.province || address.state_district || address.county || '');
+            if (!stateValue) stateValue = getStateFromCoordinates(lat, lon);
+            if (!stateValue && displayName) {
+                var dl = displayName.toLowerCase();
+                for (var city in cityToStateMapping) {
+                    if (dl.indexOf(city) !== -1) { stateValue = cityToStateMapping[city]; break; }
+                }
+                if (!stateValue) {
+                    for (var key in stateNameMapping) {
+                        for (var j = 0; j < stateNameMapping[key].length; j++) {
+                            var sn = stateNameMapping[key][j];
+                            if (sn.length >= 4 && new RegExp('\\b' + sn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i').test(dl)) {
+                                stateValue = key; break;
+                            }
+                        }
+                        if (stateValue) break;
                     }
                 }
-            });
-        }
-        
-        // Function to handle successful geolocation
-        function handleGeolocationSuccess(position) {
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
+                if (!stateValue) stateValue = getStateFromCoordinates(lat, lon);
             }
-            if (geolocationTimeout) {
-                clearTimeout(geolocationTimeout);
+            if (stateValue) {
+                $('#stateSelect').val(stateValue).trigger('change');
+                var lgaName = findLGAFromAddress(data, stateValue);
+                if (lgaName) {
+                    setTimeout(function() {
+                        var lgaValue = lgaName.toLowerCase().replace(/\s+/g, '_');
+                        var lgaSelect = $('#lgaSelect');
+                        if (!lgaSelect.find('option[value="' + lgaValue + '"]').length) {
+                            lgaSelect.find('option').each(function() {
+                                if ($(this).text().toLowerCase() === lgaName.toLowerCase()) { lgaSelect.val($(this).val()); return false; }
+                            });
+                        } else { lgaSelect.val(lgaValue); }
+                    }, 500);
+                }
+            } else {
+                alert('State could not be automatically detected. Please select manually.');
             }
-            
-            var lat = position.coords.latitude;
-            var lon = position.coords.longitude;
-            
-            // Set GPS coordinates immediately
-            $('#gpsInput').val(lat + ', ' + lon);
-            
-            // Start reverse geocoding
-            reverseGeocode(lat, lon, 1);
-        }
-        
-        // Function to handle geolocation error
-        function handleGeolocationError(error) {
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-            }
-            if (geolocationTimeout) {
-                clearTimeout(geolocationTimeout);
-            }
-            
-            var errorMsg = 'Error getting location: ';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMsg += 'Please allow location access in your browser settings.';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMsg += 'Location information is unavailable. Please check your GPS/network connection.';
-                    break;
-                case error.TIMEOUT:
-                    errorMsg += 'Location request timed out. Please try again or check your GPS/network connection.';
-                    break;
-                default:
-                    errorMsg += 'An unknown error occurred. Please try again.';
-                    break;
-            }
-            alert(errorMsg);
             link.text(originalText).css('pointer-events', 'auto');
         }
         
-        // Geolocation options optimized for speed and accuracy
-        var geolocationOptions = {
-            enableHighAccuracy: true, // Use GPS if available for better accuracy
-            timeout: 15000, // 15 seconds timeout (reduced for faster response)
-            maximumAge: 60000 // Accept cached position up to 1 minute old (faster response)
-        };
-        
-        // Try getCurrentPosition first
-        navigator.geolocation.getCurrentPosition(
-            handleGeolocationSuccess,
-            function(error) {
-                // If getCurrentPosition fails, try watchPosition as fallback
-                link.text('Getting accurate location...');
-                watchId = navigator.geolocation.watchPosition(
-                    handleGeolocationSuccess,
-                    handleGeolocationError,
-                    geolocationOptions
-                );
-                
-                // Set a timeout for watchPosition
-                geolocationTimeout = setTimeout(function() {
-                    if (watchId) {
-                        navigator.geolocation.clearWatch(watchId);
-                    }
-                    var timeoutError = { code: 3 }; // TIMEOUT error code
-                    handleGeolocationError(timeoutError);
-                }, 15000);
-            },
-            geolocationOptions
-        );
-    });
-    
-    // Debug helper: run from browser console to get detailed categorizer output for any text.
-    // Example (in browser devtools):
-    //   debugCategorize("A guy forcefully sleeps with his girlfriend today and killed her");
-    window.debugCategorize = function(text) {
-        try {
-            console.log('=== debugCategorize START ===');
-            console.log('Original text:', text);
-            var corrected = autocorrectText(text);
-            console.log('Autocorrected:', corrected);
-
-            var kb = categorizeByKeywords(corrected);
-            console.log('categorizeByKeywords ->', kb);
-
-            var dr = deriveCategoryFromText(corrected);
-            console.log('deriveCategoryFromText ->', dr);
-
-            // Run the full pipeline (may call API if OPENAI_API_KEY is set)
-            categorizeWithOpenAI(corrected, function(category, dynamicCategory, reason) {
-                console.log('categorizeWithOpenAI callback -> primary category:', category);
-                console.log('categorizeWithOpenAI callback -> dynamicCategory (comma list):', dynamicCategory);
-                console.log('categorizeWithOpenAI callback -> reason:', reason);
-                console.log('=== debugCategorize END ===');
+        function reverseGeocode(lat, lon, attempt) {
+            attempt = attempt || 1;
+            link.text('Getting address... (' + attempt + '/2)');
+            var services = [
+                'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon + '&zoom=16&addressdetails=1&countrycodes=ng&accept-language=en'),
+                'https://corsproxy.io/?https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lon + '&zoom=16&addressdetails=1&countrycodes=ng&accept-language=en'
+            ];
+            $.ajax({
+                url: services[Math.min(attempt - 1, services.length - 1)], method: 'GET', dataType: 'json', timeout: 10000,
+                success: function(data) {
+                    if (data && (data.address || data.display_name)) { processGeocodingResponse(data, lat, lon); }
+                    else if (attempt < 2) { setTimeout(function() { reverseGeocode(lat, lon, attempt + 1); }, 1000); }
+                    else { alert('Could not retrieve address information. Please fill in manually.'); link.text(originalText).css('pointer-events', 'auto'); }
+                },
+                error: function() {
+                    if (attempt < 2) { setTimeout(function() { reverseGeocode(lat, lon, attempt + 1); }, 1000); }
+                    else { alert('Error retrieving address. Please fill in manually.'); link.text(originalText).css('pointer-events', 'auto'); }
+                }
             });
-        } catch (e) {
-            console.error('debugCategorize error:', e);
         }
+        
+        function handleSuccess(position) {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            if (geolocationTimeout) clearTimeout(geolocationTimeout);
+            var lat = position.coords.latitude, lon = position.coords.longitude;
+            $('#gpsInput').val(lat + ', ' + lon);
+            reverseGeocode(lat, lon, 1);
+        }
+        
+        function handleError(error) {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            if (geolocationTimeout) clearTimeout(geolocationTimeout);
+            var msgs = { 1: 'Please allow location access in your browser settings.', 2: 'Location information is unavailable.', 3: 'Location request timed out. Please try again.' };
+            alert('Error getting location: ' + (msgs[error.code] || 'An unknown error occurred.'));
+            link.text(originalText).css('pointer-events', 'auto');
+        }
+        
+        var opts = { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 };
+        navigator.geolocation.getCurrentPosition(handleSuccess, function() {
+            link.text('Getting accurate location...');
+            watchId = navigator.geolocation.watchPosition(handleSuccess, handleError, opts);
+            geolocationTimeout = setTimeout(function() {
+                if (watchId) navigator.geolocation.clearWatch(watchId);
+                handleError({ code: 3 });
+            }, 15000);
+        }, opts);
+    });
+
+    // Debug helper: call from browser console
+    // e.g. debugCategorize("Armed men broke into our shop and stole everything")
+    window.debugCategorize = function(text) {
+        console.log('=== debugCategorize START ===');
+        console.log('Text:', text);
+        var kb = classifyByKeywords(text);
+        console.log('Keyword fallback ->', kb);
+        classify_with_gemini(text, function(geminiResult) {
+            console.log('Gemini result ->', geminiResult);
+            console.log('Final (Gemini wins if set) ->', geminiResult || kb);
+            console.log('=== debugCategorize END ===');
+        });
     };
 
 })(jQuery);

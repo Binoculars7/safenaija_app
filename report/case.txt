@@ -1,0 +1,9 @@
+id,case,email
+1,accident,elitespot.com@gmail.com
+2,fire,ajibadepeter4@gmail.com
+3,robbery,gudhealth.online@gmail.com
+4,kidnapping,debola222@gmail.com
+5,fraud,olokotaiwoevthag@gmail.com
+6,health,case6@example.com
+7,vandalism,case7@example.com
+8,misplace,case8@example.com

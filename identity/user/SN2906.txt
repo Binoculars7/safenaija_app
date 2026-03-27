@@ -1,0 +1,23 @@
+{
+    "safenid": "SN2906",
+    "phone": "08098765432",
+    "nin": "34567890123",
+    "firstname": "Oluwaseun",
+    "middlename": "Grace",
+    "lastname": "Adeyemi",
+    "gender": "Female",
+    "dateOfBirth": "1988-12-10",
+    "email": "seun.adeyemi@email.com",
+    "address": "78 Ring Road, Ibadan",
+    "state": "Oyo",
+    "lga": "Ibadan North",
+    "registered_date": "2026-03-27 13:56:43",
+    "payment_status": "completed",
+    "payment_date": "2026-03-27 13:56:59",
+    "payment_reference": "SN20260327135649b0a90062",
+    "payment_amount": "5000",
+    "payment_currency": "NGN",
+    "payment_expiry": "2027-03-27 13:56:59",
+    "payment_method": "Quickteller",
+    "last_payment_check": "2026-03-27 13:56:59"
+}

@@ -1,0 +1,23 @@
+{
+    "safenid": "SN6890",
+    "phone": "08012345678",
+    "nin": "12345678901",
+    "firstname": "Chinedu",
+    "middlename": "Emmanuel",
+    "lastname": "Okafor",
+    "gender": "Male",
+    "dateOfBirth": "1990-05-15",
+    "email": "chinedu.okafor@email.com",
+    "address": "123 Allen Avenue, Ikeja",
+    "state": "Lagos",
+    "lga": "Ikeja",
+    "registered_date": "2026-03-27 14:06:28",
+    "payment_status": "completed",
+    "payment_date": "2026-03-27 14:06:37",
+    "payment_reference": "SN202603271406324910e08e",
+    "payment_amount": "5000",
+    "payment_currency": "NGN",
+    "payment_expiry": "2027-03-27 14:06:37",
+    "payment_method": "Quickteller",
+    "last_payment_check": "2026-03-27 14:06:37"
+}
