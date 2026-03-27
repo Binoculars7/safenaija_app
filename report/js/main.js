@@ -62,7 +62,7 @@
     // ============================================
     // Configuration - Gemini API
     // ============================================
-    var GEMINI_API_KEY = 'AIzaSyDgrfEeH5w4rxGp6QNEuoCd4qDSjvMMXN4';
+    var GEMINI_API_KEY = '';
     var GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
     
     // Issue categories
