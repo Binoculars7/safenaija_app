@@ -1,4 +1,4 @@
-# 🚨 SafeNaija – AI-Powered Emergency & Crime Reporting System
+re# 🚨 SafeNaija – AI-Powered Emergency & Crime Reporting System
 
 > **Making Nigeria safer through intelligent, real-time emergency reporting.**
 
@@ -39,7 +39,7 @@ SafeNaija eliminates confusion by using **AI to understand incidents and instant
 - 🧩 Architecture File: `./docs/architecture.png`
 - 📊 Presentation File: `./docs/SafeNaija Presentation.pptx`
 
-> ⚠️ Place these files inside a `/docs` folder in your repo.
+
 
 ---
 
