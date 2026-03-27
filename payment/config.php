@@ -24,8 +24,8 @@ function getBaseURL() {
 }
 
 // Quickteller API Configuration (TEST MODE) 
-define('QUICKTELLER_MERCHANT_ID', 'IKIA77857B2284554669BE6426EEDAABF66BB4FE5F5E'); // Test merchant ID
-define('QUICKTELLER_API_KEY', 'EqIrSs2R7Z9Fl0X');
+define('QUICKTELLER_MERCHANT_ID', ''); // Test merchant ID
+define('QUICKTELLER_API_KEY', '');
 define('QUICKTELLER_API_URL', 'https://qa.interswitchng.com/api/v3/purchases'); // Test endpoint
 
 // Payment Configuration
